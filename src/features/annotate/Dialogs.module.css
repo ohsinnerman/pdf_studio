@@ -1,0 +1,81 @@
+.noteText {
+  display: block;
+  width: 100%;
+  min-height: 96px;
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tab {
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--body);
+  font: var(--text-label);
+  cursor: pointer;
+}
+.tab:hover {
+  color: var(--ink);
+}
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+}
+
+.padWrap {
+  position: relative;
+  margin-top: var(--space-4);
+}
+
+.pad {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.padHint {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 22%;
+  padding-top: 4px;
+  border-top: 1px solid #cfcdc4;
+  color: #a09c92;
+  font: var(--text-caption);
+  pointer-events: none;
+}
+
+.typed {
+  width: 100%;
+  height: 56px;
+  margin-top: var(--space-4);
+  font:
+    32px 'Segoe Script',
+    'Brush Script MT',
+    'Lucida Handwriting',
+    cursive;
+  color: #102070;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-3);
+  color: var(--body);
+  font: var(--text-caption);
+}

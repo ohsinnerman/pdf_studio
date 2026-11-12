@@ -1,0 +1,51 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* See-through until focused: the engine-rendered appearance shows the value. */
+.field {
+  position: absolute;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 3px;
+  border: 0;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  color: transparent;
+  font-family: Arial, 'Liberation Sans', Helvetica, sans-serif;
+  pointer-events: auto;
+  cursor: text;
+  appearance: none;
+  outline: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 0;
+}
+
+.field:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.field:focus {
+  background: var(--paper);
+  color: #111;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.field[data-toggle] {
+  cursor: pointer;
+}
+.field[data-toggle]:focus {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.field:disabled {
+  background: transparent;
+  outline: none;
+  cursor: not-allowed;
+}
+
+select.field {
+  cursor: pointer;
+}

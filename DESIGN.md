@@ -113,6 +113,10 @@ This file is the single source of truth for how PDF Studio looks. The tokens abo
 
 **Toolbar.** `canvas` background, bottom `hairline`, 44 px tall. Groups are separated by 8 px of space and a 1 × 18 px `hairline-strong` divider. Left to right: file name with dirty dot, page actions, spacer, undo/redo, zoom, Save.
 
+**Tools bar.** A second 40 px row under the toolbar: tool groups on the left (select and edit · text markup · drawing · inserting · cover and redact), each tool with a single-letter shortcut. On the right, the properties of the active tool or the selected annotation: 7 colour swatches (18 px circles, selected = accent ring), width, fill, font and size selects. Destructive document actions (Apply redactions) use a danger-outlined button, never the primary fill.
+
+**Page overlays.** Selection is a 1.5 px accent outline with 9 px square handles on a surface fill. Previews while dragging are dashed accent outlines. Inline editors (text lines, text boxes) cover the paper with `--paper` and a 2 px accent ring. Form fields are see-through with a faint accent tint and dashed outline until focused.
+
 **Sidebar (thumbnails).** `canvas` background, right `hairline`. Thumbnails have radius `md`, a `paper` fill and a 1 px `hairline` border. Selected: a 2 px `accent` ring with 2 px offset, `accent-soft` behind the page number. The page number sits underneath in `caption` mono.
 
 **Viewport.** `viewport` background. Pages are centred with `page-gap` between them, carry the paper shadow, and have no radius (paper is square).

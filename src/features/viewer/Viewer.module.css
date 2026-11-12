@@ -31,3 +31,9 @@
   width: 100%;
   height: 100%;
 }
+
+/* The scroller is focusable (for keyboard scrolling) but isn't a control: no focus ring. */
+.scroller:focus,
+.scroller:focus-visible {
+  outline: none;
+}

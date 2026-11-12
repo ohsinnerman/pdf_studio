@@ -1,0 +1,132 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+
+.layer:not([data-tool='select']) {
+  cursor: crosshair;
+}
+.layer[data-tool='highlight'],
+.layer[data-tool='underline'],
+.layer[data-tool='strikeout'] {
+  cursor: text;
+}
+.layer[data-tool='note'] {
+  cursor: copy;
+}
+
+/* Select tool: invisible hit boxes over each annotation. */
+.hit {
+  position: absolute;
+  border-radius: 2px;
+}
+.hit:hover {
+  outline: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 1px;
+}
+.hit[data-movable] {
+  cursor: move;
+}
+.hit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.selection {
+  position: absolute;
+  outline: 1.5px solid var(--accent);
+  outline-offset: 2px;
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border: 1.5px solid var(--accent);
+  border-radius: 2px;
+  background: var(--surface);
+  pointer-events: auto;
+}
+.handle[data-handle='nw'] {
+  left: -2px;
+  top: -2px;
+  cursor: nwse-resize;
+}
+.handle[data-handle='n'] {
+  left: 50%;
+  top: -2px;
+  cursor: ns-resize;
+}
+.handle[data-handle='ne'] {
+  left: calc(100% + 2px);
+  top: -2px;
+  cursor: nesw-resize;
+}
+.handle[data-handle='e'] {
+  left: calc(100% + 2px);
+  top: 50%;
+  cursor: ew-resize;
+}
+.handle[data-handle='se'] {
+  left: calc(100% + 2px);
+  top: calc(100% + 2px);
+  cursor: nwse-resize;
+}
+.handle[data-handle='s'] {
+  left: 50%;
+  top: calc(100% + 2px);
+  cursor: ns-resize;
+}
+.handle[data-handle='sw'] {
+  left: -2px;
+  top: calc(100% + 2px);
+  cursor: nesw-resize;
+}
+.handle[data-handle='w'] {
+  left: -2px;
+  top: 50%;
+  cursor: ew-resize;
+}
+
+.preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ghost {
+  fill: color-mix(in srgb, var(--accent) 8%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.preview :is(rect, ellipse) {
+  vector-effect: non-scaling-stroke;
+}
+
+.textbox {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--paper);
+  box-shadow:
+    0 0 0 2px var(--paper),
+    0 0 0 4px var(--accent);
+  line-height: 1.2;
+  resize: none;
+  overflow: hidden;
+  field-sizing: content;
+}
+.textbox:focus {
+  outline: none;
+}

@@ -57,7 +57,7 @@
   left: -4px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
   padding: 4px 8px;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-sm);
@@ -80,4 +80,56 @@
 .chip[data-problem] {
   border-color: color-mix(in srgb, var(--danger) 40%, var(--hairline));
   color: var(--danger);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 8px;
+  border-right: 1px solid var(--hairline);
+}
+
+.controls button {
+  min-width: 24px;
+  height: 22px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--ink);
+  font: var(--text-label);
+  cursor: pointer;
+}
+.controls button:hover {
+  background: var(--hover-tint);
+}
+.controls button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.controls select {
+  height: 22px;
+  margin: 0 4px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--ink);
+  font: var(--text-caption);
+}
+
+.controls .swatch {
+  min-width: 16px;
+  width: 16px;
+  height: 16px;
+  margin: 0 1px;
+  padding: 0;
+  border: 1px solid rgb(0 0 0 / 0.2);
+  border-radius: var(--radius-pill);
+}
+.controls .swatch[aria-pressed='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  background-clip: content-box;
 }

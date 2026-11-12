@@ -1,14 +1,4 @@
-import {
-  FolderOpen,
-  MoveHorizontal,
-  Redo2,
-  Save,
-  SaveAll,
-  TextCursorInput,
-  Undo2,
-  ZoomIn,
-  ZoomOut,
-} from 'lucide-react';
+import { FolderOpen, MoveHorizontal, Redo2, Save, SaveAll, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { platform } from './platform/index.ts';
 import { AppMark } from './components/AppMark.tsx';
@@ -20,7 +10,11 @@ import { DropTarget } from './features/open/DropTarget.tsx';
 import { PasswordDialog } from './features/open/PasswordDialog.tsx';
 import { StatusBar } from './features/status/StatusBar.tsx';
 import { Viewer } from './features/viewer/Viewer.tsx';
+import { ToolDialogs } from './features/annotate/Dialogs.tsx';
+import { TOOL_GROUPS } from './features/annotate/tools.tsx';
+import { ToolsBar } from './features/annotate/ToolsBar.tsx';
 import { Sidebar } from './features/thumbnails/Sidebar.tsx';
+import { deleteSelectedAnnotation } from './state/annotations.ts';
 import { useDevicePixelRatio } from './lib/useDevicePixelRatio.ts';
 import {
   deleteTargets,
@@ -32,8 +26,8 @@ import {
   save,
   saveAs,
   selectAllPages,
-  setTool,
-  toggleEditText,
+  escape,
+  toggleTool,
   undo,
   windowTitle,
   zoomIn,
@@ -49,7 +43,6 @@ export function App() {
   const fit = useApp((s) => s.fit);
   const busy = useApp((s) => s.busy);
   const passwordPrompt = useApp((s) => s.passwordPrompt);
-  const tool = useApp((s) => s.tool);
   const dpr = useDevicePixelRatio();
   const title = windowTitle(doc);
 
@@ -73,9 +66,17 @@ export function App() {
       'Ctrl+A': selectAllPages,
       'Ctrl+[': () => void rotateTargets(270),
       'Ctrl+]': () => void rotateTargets(90),
-      Delete: () => void deleteTargets(),
-      E: () => useApp.getState().doc && toggleEditText(),
-      Escape: () => setTool('view'),
+      // Delete removes the selected annotation if there is one, otherwise the selected pages.
+      Delete: () =>
+        void deleteSelectedAnnotation().then((done) => {
+          if (!done) void deleteTargets();
+        }),
+      Backspace: () => void deleteSelectedAnnotation(),
+      // One key per tool (shown in each tool's tooltip); pressing it again returns to Select.
+      ...Object.fromEntries(
+        TOOL_GROUPS.flat().map((t) => [t.key, () => useApp.getState().doc && toggleTool(t.tool)]),
+      ),
+      Escape: escape,
     }),
     [],
   );
@@ -98,17 +99,6 @@ export function App() {
             icon={<FolderOpen />}
             onClick={() => void openFromDialog()}
             disabled={!!busy}
-          />
-        </ToolbarGroup>
-        <ToolbarDivider />
-        <ToolbarGroup label="Tools">
-          <IconButton
-            label="Edit text"
-            shortcut="E"
-            icon={<TextCursorInput />}
-            onClick={toggleEditText}
-            pressed={tool === 'editText'}
-            disabled={!doc}
           />
         </ToolbarGroup>
         <ToolbarSpacer />
@@ -172,6 +162,8 @@ export function App() {
         </Button>
       </Toolbar>
 
+      {doc ? <ToolsBar /> : <div />}
+
       <div className={doc ? styles.body : `${styles.body} ${styles.bodyNoSidebar}`}>
         {doc && <Sidebar key={doc.id} doc={doc} dpr={dpr} />}
         <main className={styles.viewport} aria-label="Document">
@@ -185,6 +177,7 @@ export function App() {
 
       <StatusBar />
       <Notices />
+      <ToolDialogs />
       <DropTarget />
       {passwordPrompt && <PasswordDialog key={passwordPrompt.docId} prompt={passwordPrompt} />}
     </div>

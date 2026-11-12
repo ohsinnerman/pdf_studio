@@ -1,4 +1,4 @@
-import type { Command, DocumentInfo, TextLine } from '../engine/api.ts';
+import type { Command, DocumentInfo, TextLine, TextStyle } from '../engine/api.ts';
 import { getEngine } from '../engine/client.ts';
 import { platform, type OpenedFile, type SaveTarget } from '../platform/index.ts';
 import { renderer } from '../render/index.ts';
@@ -111,8 +111,10 @@ function showDocument(info: DocumentInfo, name: string, path: string | null) {
     scrollTarget: null,
     selection: [],
     selectionAnchor: null,
-    tool: 'view',
+    tool: 'select',
     textEdit: null,
+    selectedAnnot: null,
+    dialog: null,
   });
   if (info.wasRepaired)
     notify('info', `${name} was damaged and has been repaired. Saving will write a fixed copy.`);
@@ -353,10 +355,21 @@ export function installCloseGuard(): () => void {
 // ---------- Edit text ----------
 
 export function setTool(tool: Tool): void {
-  set({ tool, textEdit: null });
+  set({ tool, textEdit: null, selectedAnnot: null });
 }
 
-export const toggleEditText = () => setTool(get().tool === 'editText' ? 'view' : 'editText');
+/** Pressing a tool's key twice goes back to Select. */
+export const toggleTool = (tool: Tool) => setTool(get().tool === tool ? 'select' : tool);
+export const toggleEditText = () => toggleTool('editText');
+
+/** Esc: close what's open, step by step. */
+export function escape(): void {
+  const { textEdit, selectedAnnot, dialog, tool } = get();
+  if (dialog) set({ dialog: null });
+  else if (textEdit) set({ textEdit: null });
+  else if (selectedAnnot) set({ selectedAnnot: null });
+  else if (tool !== 'select') setTool('select');
+}
 
 export function startTextEdit(pageIndex: number, line: TextLine): void {
   const { doc } = get();
@@ -377,7 +390,7 @@ export function cancelTextEdit(): void {
  * Applies the edit. Returns false (and keeps the editor open) if the engine
  * refused it, e.g. a character the substitute font can't draw.
  */
-export async function commitTextEdit(text: string): Promise<boolean> {
+export async function commitTextEdit(text: string, style?: TextStyle): Promise<boolean> {
   const edit = get().textEdit;
   if (!edit) return true;
   const { doc } = get();
@@ -387,11 +400,18 @@ export async function commitTextEdit(text: string): Promise<boolean> {
     set({ textEdit: null });
     return true;
   }
-  if (text === edit.line.text) {
+  const restyled = !!style && Object.keys(style).length > 0;
+  if (text === edit.line.text && !restyled) {
     set({ textEdit: null });
     return true;
   }
-  const ok = await runCommand({ type: 'replaceText', page: edit.pageIndex, line: edit.line, text });
+  const ok = await runCommand({
+    type: 'replaceText',
+    page: edit.pageIndex,
+    line: edit.line,
+    text,
+    ...(restyled ? { style } : {}),
+  });
   // Only close this editor: the user may already have clicked another line.
   if (ok && get().textEdit === edit) set({ textEdit: null });
   return ok;

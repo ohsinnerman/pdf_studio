@@ -44,14 +44,15 @@ CI runs the same commands (see [RELEASING.md](RELEASING.md)), so a green `check`
 
 ### What the tests cover
 
-| Area               | File                                      | How                                                                                                                                                   |
-| ------------------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Coordinates        | `src/lib/coords.test.ts`                  | Every rotation, zoom and DPR case                                                                                                                     |
-| Engine             | `tests/engine.test.ts`                    | Real MuPDF in Node, on PDFs generated per test (`tests/fixtures/make-pdf.ts`): open, passwords, render, every command, undo/redo across saves, saving |
-| Text editing       | `tests/text-edit.test.ts`                 | Line detection, font matching, replace/delete a line, neighbours intact, refusals, undo, save/reopen, rotated pages, a real Chromium PDF              |
-| Render pipeline    | `src/render/render.test.ts`               | LRU eviction, priority, cancellation, de-duplication, stale results                                                                                   |
-| Selection, reorder | `src/features/thumbnails/reorder.test.ts` | Pure functions behind clicks and drag-and-drop                                                                                                        |
-| Atomic save        | `src-tauri/src/save.rs`                   | Create, replace, failure leaves the original untouched, no leftover temp files                                                                        |
+| Area                  | File                                      | How                                                                                                                                                                |
+| --------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Coordinates           | `src/lib/coords.test.ts`                  | Every rotation, zoom and DPR case                                                                                                                                  |
+| Engine                | `tests/engine.test.ts`                    | Real MuPDF in Node, on PDFs generated per test (`tests/fixtures/make-pdf.ts`): open, passwords, render, every command, undo/redo across saves, saving              |
+| Text editing          | `tests/text-edit.test.ts`                 | Line detection, font matching, replace/delete a line, neighbours intact, refusals, undo, save/reopen, rotated pages, a real Chromium PDF                           |
+| Annotations and forms | `tests/annotations.test.ts`               | Every annotation kind, ids that survive save/replay, move/resize/restyle/delete, undo, cover vs real redaction, flatten, filling forms (`tests/fixtures/form.pdf`) |
+| Render pipeline       | `src/render/render.test.ts`               | LRU eviction, priority, cancellation, de-duplication, stale results                                                                                                |
+| Selection, reorder    | `src/features/thumbnails/reorder.test.ts` | Pure functions behind clicks and drag-and-drop                                                                                                                     |
+| Atomic save           | `src-tauri/src/save.rs`                   | Create, replace, failure leaves the original untouched, no leftover temp files                                                                                     |
 
 ## 4. Where things are
 
@@ -67,7 +68,8 @@ src/
     browser.ts     Browser fallback for `npm run dev`.
   render/        Render scheduler + bitmap cache + the usePageBitmap hook.
   state/         Zustand store, actions (every state change), keyboard shortcuts.
-  features/      UI by feature: viewer, thumbnails, open, status, empty.
+  features/      UI by feature: viewer, thumbnails, open, status, empty,
+                 edit-text (Edit text tool), annotate (tools bar, page overlay, dialogs), forms.
   components/    Shared UI: Button, IconButton, Toolbar, Notices, Dialog styles.
   lib/           coords.ts (all coordinate maths), useDevicePixelRatio.
   styles/        tokens.css (mirror of DESIGN.md) and base.css.

@@ -4,6 +4,40 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.15-pre-alpha]
+
+### Added
+
+- **Tools bar**, a second toolbar row with every editing tool and a single-letter shortcut for each. Pressing a tool's key again returns to Select.
+  - Select `V` · Edit text `E`
+  - Highlight `H` · Underline `U` · Strike through `K`
+  - Draw `D` · Rectangle `M` · Ellipse `O` · Line `L` · Arrow `A`
+  - Text box `T` · Sticky note `N` · Image `I` · Signature `S`
+  - Cover `W` · Redact `X`
+- **Properties** on the right of the tools bar, for the active tool or the selected annotation: colour swatches, width, fill, font and size. Changing them on a selection restyles it as one undoable step.
+- **Page overlay**:
+  - Live previews while drawing: drag rectangles, lines and arrows, freehand ink, and text-selection highlights as you drag.
+  - Select, move and resize annotations with 8 handles.
+  - Double-click a text box to edit it, or a note to change its text.
+  - `Delete` removes the selected annotation (or the selected pages if none). `Esc` steps back: dialog, then edit, then selection, then tool.
+- **Text boxes** are typed in place; `Ctrl+Enter` or clicking away applies, `Esc` cancels.
+- **Images** keep their aspect ratio inside the box you drag (or 180 pt wide on a click).
+- **Signature dialog**: draw on a pad (stays vector ink), type your name (rendered in a script font), or pick an image. The last signature can be remembered on this computer.
+- **Sticky note dialog**, and **Apply redactions** with a confirmation that explains the content is removed for real.
+- **Flatten** (Select tool) asks first.
+- **Forms**: see-through controls over each field. Type into text fields, toggle checkboxes, pick from drop-downs. Read-only fields are locked, and each change is an undo step.
+- **Edit text style controls**: A−/A+, bold (`Ctrl+B`), italic (`Ctrl+I`), font family and colour. The baseline stays put, and the font chip updates live.
+- `platform.openImage()` (desktop dialog or browser picker), and a shared cached `usePageData` hook for per-page engine data.
+
+### Fixed
+
+- The page area showed an orange focus ring after keyboard use.
+
+### Changed
+
+- The Edit text button moved from the main toolbar to the tools bar.
+- README, ARCHITECTURE (Phase 1/2 progress), DEVELOPMENT (code and test maps) and DESIGN (tools bar, overlays) describe the editing tools.
+
 ## [1.0.14-pre-alpha]
 
 ### Added

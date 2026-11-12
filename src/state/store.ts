@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { DocumentInfo, TextLine } from '../engine/api.ts';
+import type { DocumentInfo, FontFamily, RGB, TextLine } from '../engine/api.ts';
 
 /**
  * App state (docs/ARCHITECTURE.md §8). The engine worker owns the PDF; this
@@ -28,8 +28,83 @@ export interface PasswordPrompt {
   readonly error: string | null;
 }
 
-/** What a click on a page does. */
-export type Tool = 'view' | 'editText';
+/** What a click or drag on a page does. 'select' also lets you fill in form fields. */
+export type Tool =
+  | 'select'
+  | 'editText'
+  | 'highlight'
+  | 'underline'
+  | 'strikeout'
+  | 'ink'
+  | 'rectangle'
+  | 'ellipse'
+  | 'line'
+  | 'arrow'
+  | 'textbox'
+  | 'note'
+  | 'image'
+  | 'signature'
+  | 'whiteout'
+  | 'redaction';
+
+/** Style used by the drawing tools; each tool remembers its own. */
+export interface ToolStyle {
+  readonly color: RGB;
+  readonly fill: RGB | null;
+  readonly width: number;
+  readonly fontSize: number;
+  readonly font: FontFamily;
+  readonly opacity: number;
+}
+
+const ink: RGB = [0.76, 0.25, 0.05];
+const blue: RGB = [0.11, 0.33, 0.8];
+const black: RGB = [0.1, 0.1, 0.1];
+const base: ToolStyle = { color: blue, fill: null, width: 2, fontSize: 14, font: 'sans', opacity: 1 };
+
+export const DEFAULT_STYLES: Readonly<Record<Tool, ToolStyle>> = {
+  select: base,
+  editText: base,
+  highlight: { ...base, color: [1, 0.86, 0.2] },
+  underline: { ...base, color: [0.8, 0.13, 0.13] },
+  strikeout: { ...base, color: [0.8, 0.13, 0.13] },
+  ink: { ...base, color: ink, width: 2 },
+  rectangle: base,
+  ellipse: base,
+  line: { ...base, color: black, width: 1.5 },
+  arrow: { ...base, color: black, width: 1.5 },
+  textbox: { ...base, color: black },
+  note: { ...base, color: [1, 0.8, 0.1] },
+  image: base,
+  signature: { ...base, color: [0.05, 0.12, 0.45], width: 1.5 },
+  whiteout: base,
+  redaction: base,
+};
+
+/** The annotation selected with the Select tool. */
+export interface AnnotSelection {
+  readonly docId: string;
+  readonly pageIndex: number;
+  readonly pageKey: number;
+  readonly id: string;
+}
+
+/** A dialog that a tool needs before it can create something. */
+export type PendingDialog =
+  | {
+      readonly kind: 'signature';
+      readonly pageIndex: number;
+      readonly rect: readonly [number, number, number, number];
+    }
+  | {
+      readonly kind: 'note';
+      readonly pageIndex: number;
+      readonly at: readonly [number, number];
+      /** Set when editing an existing note. */
+      readonly id?: string;
+      readonly contents: string;
+    }
+  | { readonly kind: 'confirmRedactions' };
 
 /** The line being edited with the Edit text tool. */
 export interface TextEdit {
@@ -56,7 +131,10 @@ export interface AppState {
   /** A request for the viewer to scroll; the nonce makes repeated requests for one page work. */
   readonly scrollTarget: { readonly index: number; readonly nonce: number } | null;
   readonly tool: Tool;
+  readonly styles: Readonly<Record<Tool, ToolStyle>>;
   readonly textEdit: TextEdit | null;
+  readonly selectedAnnot: AnnotSelection | null;
+  readonly dialog: PendingDialog | null;
   /** Selected pages, as page keys in document order. Empty = actions use the current page. */
   readonly selection: readonly number[];
   /** Where a Shift-click range starts. */
@@ -73,8 +151,11 @@ export const useApp = create<AppState>(() => ({
   fit: 'width',
   currentPage: 0,
   scrollTarget: null,
-  tool: 'view',
+  tool: 'select',
+  styles: DEFAULT_STYLES,
   textEdit: null,
+  selectedAnnot: null,
+  dialog: null,
   selection: [],
   selectionAnchor: null,
   busy: null,

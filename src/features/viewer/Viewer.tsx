@@ -14,7 +14,7 @@ export function Viewer({ doc, dpr }: { readonly doc: OpenDoc; readonly dpr: numb
   const zoom = useApp((s) => s.zoom);
   const fit = useApp((s) => s.fit);
   const scrollTarget = useApp((s) => s.scrollTarget);
-  const editText = useApp((s) => s.tool === 'editText');
+  const tool = useApp((s) => s.tool);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const { pages } = doc.info;
 
@@ -100,7 +100,7 @@ export function Viewer({ doc, dpr }: { readonly doc: OpenDoc; readonly dpr: numb
                 dpr={dpr}
                 // Pages actually on screen render before the overscan ones.
                 priority={Math.abs(item.index - currentPage)}
-                editText={editText}
+                tool={tool}
               />
             </div>
           );

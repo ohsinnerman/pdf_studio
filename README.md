@@ -24,18 +24,22 @@ Editing a PDF usually means paying for Acrobat or uploading a private document t
 
 ## Features
 
-|                                                                                                    | Status            |
-| -------------------------------------------------------------------------------------------------- | ----------------- |
-| Open PDFs: dialog, Ctrl+O, drag-and-drop, password-protected files                                 | ✅                |
-| Smooth viewer for big files: virtualised, sharp on scaled displays, zoom and fit width             | ✅                |
-| Page thumbnails: select, drag to reorder                                                           | ✅                |
-| Rotate, delete, insert blank page, insert another PDF (merge)                                      | ✅                |
-| **Edit existing text**: click a line, retype it; keeps the original font where it can, ₹ supported | ✅                |
-| Undo / redo for every change, even after saving                                                    | ✅                |
-| Safe saving: temp file + rename, never corrupts the original                                       | ✅                |
-| Highlight, draw, shapes, text boxes, images                                                        | planned (Phase 1) |
-| Forms, signatures, true redaction, compression                                                     | planned (Phase 2) |
-| OCR; Hindi and other Indic scripts in text edits; multi-line paragraphs                            | planned (Phase 3) |
+|                                                                                                                                       | Status            |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Open PDFs: dialog, Ctrl+O, drag-and-drop, password-protected files                                                                    | ✅                |
+| Smooth viewer for big files: virtualised, sharp on scaled displays, zoom and fit width                                                | ✅                |
+| Page thumbnails: select, drag to reorder                                                                                              | ✅                |
+| Rotate, delete, insert blank page, insert another PDF (merge)                                                                         | ✅                |
+| **Edit existing text**: click a line, retype it; keeps the original font where it can; change size, colour, bold, italic; ₹ supported | ✅                |
+| Undo / redo for every change, even after saving                                                                                       | ✅                |
+| Safe saving: temp file + rename, never corrupts the original                                                                          | ✅                |
+| Highlight, underline, strike through, draw, rectangles, ellipses, lines, arrows, text boxes, sticky notes, images                     | ✅                |
+| Select, move, resize, restyle and delete anything you added                                                                           | ✅                |
+| Signatures (draw, type or image; remembered on this computer if you want)                                                             | ✅                |
+| Fill in PDF forms (text, checkboxes, drop-downs)                                                                                      | ✅                |
+| Cover (whiteout) and true redaction that removes content from the file; flatten                                                       | ✅                |
+| Compression, images → PDF, PDF → images                                                                                               | planned (Phase 2) |
+| OCR; Hindi and other Indic scripts in text edits; multi-line paragraphs                                                               | planned (Phase 3) |
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it's built, and the [roadmap](docs/ARCHITECTURE.md#16-roadmap-revised).
 

@@ -24,6 +24,16 @@ export const tauriPlatform: Platform = {
     );
   },
 
+  async openImage() {
+    const path = await open({
+      multiple: false,
+      directory: false,
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg'] }],
+    });
+    if (!path || Array.isArray(path)) return null;
+    return { name: baseName(path), path, bytes: await readFile(path) };
+  },
+
   async chooseSaveTarget(suggestedName) {
     // The dialog adds the chosen path to the fs scope, which is what allows save_atomic to write it.
     const path = await save({ defaultPath: withPdfExtension(suggestedName), filters: PDF_FILTER });

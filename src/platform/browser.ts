@@ -6,11 +6,11 @@ import { withPdfExtension, type OpenedFile, type Platform } from './api.ts';
  * downloads the file.
  */
 
-function pickFiles(multiple: boolean): Promise<File[]> {
+function pickFiles(multiple: boolean, accept = 'application/pdf,.pdf'): Promise<File[]> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'application/pdf,.pdf';
+    input.accept = accept;
     input.multiple = multiple;
     input.addEventListener('change', () => resolve([...(input.files ?? [])]), { once: true });
     input.addEventListener('cancel', () => resolve([]), { once: true });
@@ -37,6 +37,11 @@ export const browserPlatform: Platform = {
 
   async openPdfs({ multiple = false } = {}) {
     return Promise.all((await pickFiles(multiple)).map(fileToOpened));
+  },
+
+  async openImage() {
+    const [file] = await pickFiles(false, 'image/png,image/jpeg');
+    return file ? fileToOpened(file) : null;
   },
 
   async chooseSaveTarget(suggestedName) {

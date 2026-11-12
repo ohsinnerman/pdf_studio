@@ -457,11 +457,13 @@ flowchart LR
 
 ### Phase 1 — Viewer + core editing (MVP)
 
-**Done in 1.0.5–1.0.7:** open (dialog / drag-drop), virtualised scrolling, zoom, thumbnails, rotate / delete / reorder / insert blank / merge, undo/redo, atomic save, save as, dirty tracking. **Still to do:** Explorer "Open with", tabs, text selection and search, extract pages, all annotations, crash recovery.
+**Done in 1.0.5–1.0.7:** open (dialog / drag-drop), virtualised scrolling, zoom, thumbnails, rotate / delete / reorder / insert blank / merge, undo/redo, atomic save, save as, dirty tracking. **Done in 1.0.14–1.0.15:** all annotations (highlight/underline/strike, ink, rectangle/ellipse/line/arrow, sticky note, text box, image), select/move/resize/delete, restyling ([ADR 0007](decisions/0007-annotations-forms-redaction.md)). **Still to do:** Explorer "Open with", tabs, text search, extract pages, crash recovery.
 
 Open (dialog / drag-drop / Explorer), tabs for multiple docs, virtualised scrolling, zoom, thumbnails, text selection & copy, search · Page ops: rotate, delete, reorder, insert blank, merge another PDF, extract pages · Annotations: highlight/underline/strike, ink, rectangle/ellipse/line/arrow, sticky note, text box, image · Select/move/resize/delete annotations · Undo/redo · Atomic save, save as, dirty tracking, crash recovery.
 
 ### Phase 2 — Forms, signatures, redaction, conversion
+
+**Done early in 1.0.14–1.0.15:** form filling, signatures (draw/type/image), cover vs true redaction, flatten. **Still to do:** compression, images ↔ PDF, metadata editor.
 
 Fill AcroForm fields · Signatures (draw / type / image, saved locally for reuse) · Whiteout vs true redaction · Flatten · Compress (image downsampling + garbage collection) · Images → PDF, PDF → PNG/JPG · Metadata editor and "strip metadata".
 

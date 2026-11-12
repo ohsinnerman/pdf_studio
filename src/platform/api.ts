@@ -39,6 +39,8 @@ export interface Platform {
   readonly kind: 'tauri' | 'browser';
   /** Shows an Open dialog for PDFs. Returns an empty list if the user cancels. */
   openPdfs(options?: { multiple?: boolean }): Promise<OpenedFile[]>;
+  /** Shows an Open dialog for a PNG or JPEG image. Returns null if the user cancels. */
+  openImage(): Promise<OpenedFile | null>;
   /** Shows a Save dialog. Returns null if the user cancels. Writes nothing. */
   chooseSaveTarget(suggestedName: string): Promise<SaveTarget | null>;
   /**
