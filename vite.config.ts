@@ -23,6 +23,12 @@ export default defineConfig({
     },
   },
 
+  // The engine worker uses ES modules (MuPDF.js uses top-level await).
+  worker: { format: 'es' },
+
+  // MuPDF.js loads its .wasm file relative to its own URL; pre-bundling would break that.
+  optimizeDeps: { exclude: ['mupdf'] },
+
   // Expose TAURI_ENV_* variables (platform, debug) to the frontend.
   envPrefix: ['VITE_', 'TAURI_ENV_'],
 

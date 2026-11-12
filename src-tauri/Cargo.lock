@@ -2166,7 +2166,7 @@ dependencies = [
 
 [[package]]
 name = "pdf-studio"
-version = "1.0.1-pre-alpha"
+version = "1.0.2-pre-alpha"
 dependencies = [
  "serde",
  "serde_json",
