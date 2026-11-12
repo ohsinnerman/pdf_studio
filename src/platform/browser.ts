@@ -39,14 +39,13 @@ export const browserPlatform: Platform = {
     return Promise.all((await pickFiles(multiple)).map(fileToOpened));
   },
 
-  async savePdf() {
-    throw new Error('The browser build has no file paths; use Save As');
+  async chooseSaveTarget(suggestedName) {
+    // Browsers decide where downloads go; we can only suggest the name.
+    return { name: withPdfExtension(suggestedName), path: null };
   },
 
-  async savePdfAs(suggestedName, bytes) {
-    const name = withPdfExtension(suggestedName);
-    download(name, bytes);
-    return { name, path: null };
+  async writePdf(target, bytes) {
+    download(target.name, bytes);
   },
 
   async confirm(message) {

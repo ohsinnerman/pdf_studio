@@ -16,3 +16,12 @@ describe('zoom steps', () => {
     expect(clampZoom(100)).toBe(MAX_ZOOM);
   });
 });
+
+describe('windowTitle', () => {
+  it('marks unsaved changes with a bullet', async () => {
+    const { windowTitle } = await import('./actions.ts');
+    expect(windowTitle(null)).toBe('PDF Studio');
+    expect(windowTitle({ name: 'a.pdf', info: { dirty: false } })).toBe('a.pdf — PDF Studio');
+    expect(windowTitle({ name: 'a.pdf', info: { dirty: true } })).toBe('• a.pdf — PDF Studio');
+  });
+});

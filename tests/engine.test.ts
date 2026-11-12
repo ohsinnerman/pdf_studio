@@ -14,7 +14,12 @@ function openOk(bytes: Uint8Array, name = 'test.pdf'): DocumentInfo {
   return result.info;
 }
 
-const texts = (id: string) => pageTexts(engine.save(id));
+const texts = (id: string) => pageTexts(engine.save(id).bytes);
+const saveAndMark = (id: string, options?: { incremental?: boolean }) => {
+  const { bytes, savePoint } = engine.save(id, options);
+  engine.markSaved(id, savePoint);
+  return bytes;
+};
 
 function expectEngineError(fn: () => unknown, code: EngineError['code']) {
   try {
@@ -189,6 +194,9 @@ describe('saving', () => {
     const { id } = openOk(makePdf(2));
     expect(engine.run(id, { type: 'rotatePages', pages: [0], by: 90 }).dirty).toBe(true);
     engine.save(id);
+    // Producing bytes isn't saving: the write could still fail.
+    expect(engine.getInfo(id).dirty).toBe(true);
+    saveAndMark(id);
     expect(engine.getInfo(id).dirty).toBe(false);
     // Undoing past the save point makes the document differ from the file again.
     expect(engine.undo(id).dirty).toBe(true);
@@ -200,7 +208,7 @@ describe('saving', () => {
     const { id } = openOk(makePdf(4));
     engine.run(id, { type: 'deletePages', pages: [1] });
     engine.run(id, { type: 'rotatePages', pages: [0], by: 90 });
-    engine.save(id);
+    saveAndMark(id);
     engine.run(id, { type: 'deletePages', pages: [0] });
     engine.undo(id);
     engine.undo(id);
@@ -218,7 +226,7 @@ describe('saving', () => {
     engine.run(id, { type: 'deletePages', pages: [0] });
     engine.run(id, { type: 'deletePages', pages: [0] });
     engine.undo(id);
-    expect(pageTexts(engine.save(id))).toEqual(['Page 2', 'Page 3']);
+    expect(pageTexts(engine.save(id).bytes)).toEqual(['Page 2', 'Page 3']);
   });
 
   it('saves a password-protected file it has unlocked', () => {
@@ -226,15 +234,14 @@ describe('saving', () => {
     if (result.status !== 'needs-password') throw new Error('expected locked');
     engine.authenticate(result.id, 'pw');
     engine.run(result.id, { type: 'deletePages', pages: [0] });
-    const saved = engine.save(result.id);
-    const reopened = engine.open(saved, 'saved.pdf');
+    const reopened = engine.open(engine.save(result.id).bytes, 'saved.pdf');
     expect(reopened.status).toBe('needs-password');
   });
 
   it('round-trips through a full save', () => {
     const { id } = openOk(makePdf(3));
     engine.run(id, { type: 'rotatePages', pages: [2], by: 180 });
-    const reopened = openOk(engine.save(id), 'saved.pdf');
+    const reopened = openOk(engine.save(id).bytes, 'saved.pdf');
     expect(reopened.pages.map((p) => p.rotation)).toEqual([0, 0, 180]);
   });
 
@@ -242,8 +249,8 @@ describe('saving', () => {
     const original = makePdf(2);
     const { id } = openOk(original);
     engine.run(id, { type: 'rotatePages', pages: [0], by: 90 });
-    engine.save(id);
-    const saved = engine.save(id, { incremental: true });
+    saveAndMark(id);
+    const saved = saveAndMark(id, { incremental: true });
     expect(saved.length).toBeGreaterThan(original.length);
     expect(saved.slice(0, original.length)).toEqual(original);
     expect(openOk(saved).pages[0]!.rotation).toBe(90);

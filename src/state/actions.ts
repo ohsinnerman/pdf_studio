@@ -1,6 +1,6 @@
 import type { Command, DocumentInfo } from '../engine/api.ts';
 import { getEngine } from '../engine/client.ts';
-import { platform, type OpenedFile } from '../platform/index.ts';
+import { platform, type OpenedFile, type SaveTarget } from '../platform/index.ts';
 import { renderer } from '../render/index.ts';
 import { keysToOrder, isIdentity, nextSelection, reorderForDrop } from '../features/thumbnails/reorder.ts';
 import { clampZoom, stepZoom, useApp, type Notice } from './store.ts';
@@ -284,4 +284,66 @@ export async function movePages(activeKey: number, overKey: number): Promise<voi
   const newKeys = reorderForDrop(keys, new Set(get().selection), activeKey, overKey);
   const order = keysToOrder(keys, newKeys);
   if (!isIdentity(order)) await runCommand({ type: 'reorderPages', order });
+}
+
+// ---------- Saving ----------
+
+/**
+ * Save: overwrite the file it came from. A document without a path (dropped,
+ * or the browser build) goes through Save As instead.
+ */
+export async function save(): Promise<boolean> {
+  const { doc } = get();
+  if (!doc) return false;
+  if (!doc.path) return saveAs();
+  return writeTo({ name: doc.name, path: doc.path });
+}
+
+export async function saveAs(): Promise<boolean> {
+  const { doc } = get();
+  if (!doc) return false;
+  try {
+    // Ask first: a cancelled dialog must change nothing.
+    const target = await platform.chooseSaveTarget(doc.name);
+    return target ? await writeTo(target) : false;
+  } catch (err) {
+    notify('error', describeError(err));
+    return false;
+  }
+}
+
+async function writeTo(target: SaveTarget): Promise<boolean> {
+  const { doc, busy } = get();
+  if (!doc || busy) return false;
+  set({ busy: `Saving ${target.name}…` });
+  try {
+    const { bytes, savePoint } = await getEngine().save(doc.id);
+    await platform.writePdf(target, bytes);
+    // Only now is it really saved.
+    const info = await getEngine().markSaved(doc.id, savePoint);
+    const current = get().doc;
+    if (current?.id === doc.id) {
+      set({ doc: { ...current, info, name: target.name, path: target.path ?? current.path } });
+    }
+    notify('info', `Saved ${target.name}`);
+    return true;
+  } catch (err) {
+    notify('error', `Couldn't save ${target.name}. ${describeError(err)}`);
+    return false;
+  } finally {
+    set({ busy: null });
+  }
+}
+
+/** Keeps the window title in sync: "• report.pdf — PDF Studio" while there are unsaved changes. */
+export function windowTitle(doc: { name: string; info: { dirty: boolean } } | null): string {
+  if (!doc) return 'PDF Studio';
+  return `${doc.info.dirty ? '• ' : ''}${doc.name} — PDF Studio`;
+}
+
+export function installCloseGuard(): () => void {
+  return platform.guardClose({
+    hasUnsavedChanges: () => !!get().doc?.info.dirty,
+    confirmDiscard: () => confirmDiscardChanges(),
+  });
 }

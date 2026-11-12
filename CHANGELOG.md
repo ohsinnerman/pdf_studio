@@ -4,6 +4,20 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.7-pre-alpha]
+
+### Added
+
+- Save (Ctrl+S) overwrites the original file safely. Save As (Ctrl+Shift+S) asks where first. A document with no path (dropped onto the window, or opened in the browser build) goes through Save As automatically.
+- An unsaved-changes dot next to the file name, and a window title that shows it too ("• report.pdf — PDF Studio").
+- A close guard: closing the window with unsaved changes asks first, and so does opening another file.
+- Saved and failed-save notices that say what happened.
+
+### Changed
+
+- **Saving no longer marks the document clean before the file is written.** `engine.save()` now returns the bytes plus a save point, and `engine.markSaved()` is called only after the write succeeds. Before this, a cancelled Save As dialog or a failed disk write would hide unsaved changes.
+- The platform API's `savePdf`/`savePdfAs` are replaced by `chooseSaveTarget` (dialog only) and `writePdf` (write only), for the same reason.
+
 ## [1.0.6-pre-alpha]
 
 ### Added

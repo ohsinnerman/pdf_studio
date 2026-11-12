@@ -24,14 +24,16 @@ export const tauriPlatform: Platform = {
     );
   },
 
-  savePdf: writeAtomic,
-
-  async savePdfAs(suggestedName, bytes) {
+  async chooseSaveTarget(suggestedName) {
+    // The dialog adds the chosen path to the fs scope, which is what allows save_atomic to write it.
     const path = await save({ defaultPath: withPdfExtension(suggestedName), filters: PDF_FILTER });
     if (!path) return null;
-    const finalPath = withPdfExtension(path);
-    await writeAtomic(finalPath, bytes);
-    return { name: baseName(finalPath), path: finalPath };
+    return { name: baseName(path), path };
+  },
+
+  async writePdf(target, bytes) {
+    if (!target.path) throw new Error('Choose where to save the file first');
+    await writeAtomic(target.path, bytes);
   },
 
   confirm(text, { title = 'PDF Studio', okLabel, cancelLabel, kind = 'warning' } = {}) {

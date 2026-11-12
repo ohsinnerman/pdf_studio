@@ -10,6 +10,7 @@ import {
   type RenderResult,
   type Rotation,
   type SaveOptions,
+  type SaveResult,
 } from '../api.ts';
 
 /**
@@ -162,7 +163,7 @@ export class MupdfEngine {
    * copy. An incremental save is then relative to the original file, which is
    * exactly what "incremental" should mean.
    */
-  save(id: DocumentId, options: SaveOptions = {}): Uint8Array<ArrayBuffer> {
+  save(id: DocumentId, options: SaveOptions = {}): SaveResult {
     const entry = this.entry(id);
     const position = entry.doc.getJournal().position;
     const copy = this.openOriginal(entry);
@@ -175,15 +176,20 @@ export class MupdfEngine {
       const buffer = copy.saveToBuffer(incremental ? 'incremental' : FULL_SAVE_OPTIONS);
       try {
         // Copy out of WASM memory: the view is invalid once the buffer is freed.
-        const bytes = new Uint8Array(buffer.asUint8Array());
-        entry.savedPosition = position;
-        return bytes;
+        return { bytes: new Uint8Array(buffer.asUint8Array()), savePoint: position };
       } finally {
         buffer.destroy();
       }
     } finally {
       copy.destroy();
     }
+  }
+
+  /** Records that the bytes from save() reached the disk. */
+  markSaved(id: DocumentId, savePoint: number): DocumentInfo {
+    const entry = this.entry(id);
+    entry.savedPosition = savePoint;
+    return this.info(entry);
   }
 
   private openOriginal(entry: OpenDocument): mupdf.PDFDocument {

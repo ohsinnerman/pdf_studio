@@ -16,7 +16,8 @@ export interface OpenedFile {
   readonly bytes: Uint8Array;
 }
 
-export interface SavedFile {
+/** Where a document will be written. `path` is null in the browser build (it downloads). */
+export interface SaveTarget {
   readonly name: string;
   readonly path: string | null;
 }
@@ -38,10 +39,13 @@ export interface Platform {
   readonly kind: 'tauri' | 'browser';
   /** Shows an Open dialog for PDFs. Returns an empty list if the user cancels. */
   openPdfs(options?: { multiple?: boolean }): Promise<OpenedFile[]>;
-  /** Overwrites an existing file safely (temp file + rename). Only for paths the user picked. */
-  savePdf(path: string, bytes: Uint8Array): Promise<void>;
-  /** Shows a Save dialog and writes the file. Returns null if the user cancels. */
-  savePdfAs(suggestedName: string, bytes: Uint8Array): Promise<SavedFile | null>;
+  /** Shows a Save dialog. Returns null if the user cancels. Writes nothing. */
+  chooseSaveTarget(suggestedName: string): Promise<SaveTarget | null>;
+  /**
+   * Writes the file safely (temp file + rename on desktop; a download in the
+   * browser). Desktop only writes to paths the user picked in a dialog.
+   */
+  writePdf(target: SaveTarget, bytes: Uint8Array): Promise<void>;
   confirm(message: string, options?: ConfirmOptions): Promise<boolean>;
   alert(message: string, options?: { title?: string; kind?: 'info' | 'warning' | 'error' }): Promise<void>;
   setWindowTitle(title: string): Promise<void>;

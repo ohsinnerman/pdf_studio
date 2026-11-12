@@ -37,9 +37,10 @@ const api: EngineApi = {
     }),
   save: (id: DocumentId, options?: SaveOptions) =>
     wrap(() => {
-      const bytes = engine.save(id, options);
-      return Comlink.transfer(bytes, [bytes.buffer]);
+      const result = engine.save(id, options);
+      return Comlink.transfer(result, [result.bytes.buffer]);
     }),
+  markSaved: (id: DocumentId, savePoint: number) => wrap(() => engine.markSaved(id, savePoint)),
 };
 
 Comlink.expose(api);

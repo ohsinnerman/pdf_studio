@@ -67,6 +67,12 @@ export interface RenderResult {
   readonly pixels: Uint8ClampedArray<ArrayBuffer>;
 }
 
+export interface SaveResult {
+  readonly bytes: Uint8Array<ArrayBuffer>;
+  /** Pass to markSaved() once the bytes are safely on disk. */
+  readonly savePoint: number;
+}
+
 export interface SaveOptions {
   /**
    * Append changes instead of rewriting the file. Keeps digital signatures valid.
@@ -104,8 +110,13 @@ export interface EngineApi {
   run(id: DocumentId, command: Command): Promise<DocumentInfo>;
   undo(id: DocumentId): Promise<DocumentInfo>;
   redo(id: DocumentId): Promise<DocumentInfo>;
-  /** Returns the file bytes and marks the document clean. */
-  save(id: DocumentId, options?: SaveOptions): Promise<Uint8Array<ArrayBuffer>>;
+  /**
+   * Produces the file bytes. Does NOT mark the document clean: the caller does
+   * that with markSaved() after the write succeeded, so a cancelled dialog or a
+   * failed write never hides unsaved changes.
+   */
+  save(id: DocumentId, options?: SaveOptions): Promise<SaveResult>;
+  markSaved(id: DocumentId, savePoint: number): Promise<DocumentInfo>;
 }
 
 /** Human-readable label for the Edit menu ("Undo Rotate 2 pages"). */

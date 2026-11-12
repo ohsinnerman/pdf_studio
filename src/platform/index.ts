@@ -3,7 +3,7 @@ import type { Platform } from './api.ts';
 import { browserPlatform } from './browser.ts';
 import { tauriPlatform } from './tauri.ts';
 
-export type { CloseGuard, OpenedFile, Platform, SavedFile } from './api.ts';
+export type { CloseGuard, OpenedFile, Platform, SaveTarget } from './api.ts';
 export { baseName, withPdfExtension } from './api.ts';
 export { fileToOpened } from './browser.ts';
 

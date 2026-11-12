@@ -1,5 +1,6 @@
-import { FolderOpen, MoveHorizontal, Redo2, Save, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
-import { useMemo } from 'react';
+import { FolderOpen, MoveHorizontal, Redo2, Save, SaveAll, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
+import { platform } from './platform/index.ts';
 import { AppMark } from './components/AppMark.tsx';
 import { Button, IconButton } from './components/Button.tsx';
 import { Notices } from './components/Notices.tsx';
@@ -14,11 +15,15 @@ import { useDevicePixelRatio } from './lib/useDevicePixelRatio.ts';
 import {
   deleteTargets,
   fitWidth,
+  installCloseGuard,
   openFromDialog,
   redo,
   rotateTargets,
+  save,
+  saveAs,
   selectAllPages,
   undo,
+  windowTitle,
   zoomIn,
   zoomOut,
 } from './state/actions.ts';
@@ -33,10 +38,18 @@ export function App() {
   const busy = useApp((s) => s.busy);
   const passwordPrompt = useApp((s) => s.passwordPrompt);
   const dpr = useDevicePixelRatio();
+  const title = windowTitle(doc);
+
+  useEffect(() => {
+    void platform.setWindowTitle(title);
+  }, [title]);
+  useEffect(() => installCloseGuard(), []);
 
   const shortcuts = useMemo<ShortcutMap>(
     () => ({
       'Ctrl+O': () => void openFromDialog(),
+      'Ctrl+S': () => void save(),
+      'Ctrl+Shift+S': () => void saveAs(),
       'Ctrl+=': zoomIn,
       'Ctrl+Shift+=': zoomIn,
       'Ctrl+-': zoomOut,
@@ -61,6 +74,7 @@ export function App() {
           <span className={styles.fileName} title={doc?.path ?? doc?.name}>
             {doc ? doc.name : 'PDF Studio'}
           </span>
+          {doc?.info.dirty && <span className={styles.dirty} role="img" aria-label="Unsaved changes" />}
         </div>
         <ToolbarGroup label="File">
           <IconButton
@@ -114,7 +128,20 @@ export function App() {
           />
         </ToolbarGroup>
         <ToolbarDivider />
-        <Button variant="primary" icon={<Save />} disabled>
+        <IconButton
+          label="Save as…"
+          shortcut="Ctrl+Shift+S"
+          icon={<SaveAll />}
+          onClick={() => void saveAs()}
+          disabled={!doc || !!busy}
+        />
+        <Button
+          variant="primary"
+          icon={<Save />}
+          onClick={() => void save()}
+          disabled={!doc || !!busy}
+          title="Save (Ctrl+S)"
+        >
           Save
         </Button>
       </Toolbar>
