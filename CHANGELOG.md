@@ -4,6 +4,22 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.3-pre-alpha]
+
+### Added
+
+- Platform layer (`src/platform/`), the only code allowed to touch Tauri:
+  - Desktop: native Open and Save dialogs, file reading through the fs plugin, window title, and a close guard that asks before discarding unsaved changes.
+  - Browser fallback for development and UI screenshots: a file picker to open, a download to save, and the browser's own "Leave site?" prompt.
+- `save_atomic` Rust command: writes to a hidden temp file in the same folder, flushes it, then renames it over the original. It retries when OneDrive or antivirus briefly locks the file, cleans up on failure, and accepts raw bytes over IPC with no base64. It refuses any path the user didn't pick in a dialog. 4 Rust tests.
+- Content Security Policy for release builds: no network access, WebAssembly allowed, no plugins or forms.
+- Least-privilege capabilities: only the dialog, read-file, title and close permissions the app uses.
+- `npm run check:rust` runs rustfmt, clippy (warnings are errors) and the Rust tests.
+
+### Changed
+
+- Window drag-and-drop is handled by the web page instead of Tauri, so dropped files arrive as contents without paths. Those documents are saved with Save As.
+
 ## [1.0.2-pre-alpha]
 
 ### Added

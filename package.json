@@ -1,7 +1,7 @@
 {
   "name": "pdf-studio",
   "private": true,
-  "version": "1.0.2-pre-alpha",
+  "version": "1.0.3-pre-alpha",
   "description": "A free, offline desktop PDF editor for Windows.",
   "license": "AGPL-3.0-or-later",
   "author": "Akul Shrivastava",
@@ -24,12 +24,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && node scripts/bump-version.mjs --check",
+    "check:rust": "cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test",
     "tauri": "tauri",
     "app:dev": "tauri dev",
     "app:build": "tauri build",
     "version:bump": "node scripts/bump-version.mjs"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-dialog": "^2.8.4",
+    "@tauri-apps/plugin-fs": "^2.7.1",
     "comlink": "^4.4.2",
     "mupdf": "^1.28.6",
     "react": "^19.3.1",
