@@ -4,6 +4,23 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.5-pre-alpha]
+
+### Added
+
+- PDF viewer:
+  - Virtualised page list (TanStack Virtual): only pages near the viewport exist, so a 40-page file keeps about 6 pages in the DOM.
+  - Pages render at zoom × 96/72 × device pixel ratio, so they stay sharp on scaled Windows displays. A blurry placeholder shows while the sharp render arrives, so pages never flash blank.
+  - Zoom in and out through presets, fit to width (the default, following window size), Ctrl + mouse wheel, Ctrl+= / Ctrl+- / Ctrl+0. The current page stays in place when zooming.
+- Render scheduler: one render at a time, visible pages first, off-screen requests cancelled, identical requests shared, and results discarded after a page move. A 384 MB LRU cache of `ImageBitmap`s closes evicted bitmaps to free GPU memory. 9 tests.
+- Opening: the toolbar button, Ctrl+O, the empty-state button, or dropping a PDF anywhere on the window. Asks before discarding unsaved changes. Password-protected PDFs get an unlock dialog (native `<dialog>`, focus-trapped, Esc cancels). Damaged files are repaired, with a notice.
+- Status bar (page n of N, page size in mm, zoom %, "Repaired on open"), dismissable notices, and a central keyboard-shortcut registry (5 tests).
+- App store (Zustand) and actions module. UI state such as zoom never enters the document or its undo history.
+
+### Fixed
+
+- The first call to the engine was silently lost. The worker loads MuPDF's WASM with a top-level `await`, and messages that reach a worker before it listens are dropped. The worker now announces when it's ready, and the client waits for that. The error event is also logged, so a worker that fails to start is no longer silent.
+
 ## [1.0.4-pre-alpha]
 
 ### Added

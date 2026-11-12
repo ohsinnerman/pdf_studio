@@ -6,6 +6,7 @@
 import * as Comlink from 'comlink';
 import { EngineError, type Command, type DocumentId, type EngineApi, type SaveOptions } from './api.ts';
 import { MupdfEngine } from './mupdf/engine.ts';
+import { ENGINE_READY } from './ready.ts';
 
 const engine = new MupdfEngine();
 
@@ -42,3 +43,8 @@ const api: EngineApi = {
 };
 
 Comlink.expose(api);
+
+// The MuPDF import above uses top-level await to load its WASM, and messages that
+// reach a worker before a listener exists are dropped. So the client waits for
+// this signal before sending anything (see client.ts).
+self.postMessage(ENGINE_READY);

@@ -1,0 +1,72 @@
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: var(--space-5);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--lift-shadow);
+}
+
+.dialog::backdrop {
+  background: var(--scrim);
+}
+
+.dialog[open] {
+  animation: rise var(--m-panel) var(--ease);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog[open] {
+    animation: none;
+  }
+}
+
+.title {
+  font: var(--text-title);
+  letter-spacing: -0.15px;
+}
+
+.body {
+  margin-top: var(--space-2);
+  color: var(--body);
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-top: var(--space-4);
+  font: var(--text-label);
+}
+
+.input {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+  background: var(--canvas);
+  font: var(--text-body);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.error {
+  color: var(--danger);
+  font: var(--text-caption);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}

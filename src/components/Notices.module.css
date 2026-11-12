@@ -1,0 +1,65 @@
+.stack {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--statusbar-height) + var(--space-4));
+  display: grid;
+  gap: var(--space-2);
+  width: min(380px, calc(100vw - 32px));
+  z-index: 10;
+}
+
+.notice {
+  display: grid;
+  grid-template-columns: 16px 1fr 20px;
+  gap: var(--space-2);
+  align-items: start;
+  padding: var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--lift-shadow);
+  animation: rise var(--m-panel) var(--ease);
+}
+
+.notice > svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  stroke-width: 1.75;
+  color: var(--body);
+}
+.notice[data-kind='error'] > svg {
+  color: var(--danger);
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.close:hover {
+  background: var(--hover-tint);
+}
+.close svg {
+  width: 14px;
+  height: 14px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notice {
+    animation: none;
+  }
+}

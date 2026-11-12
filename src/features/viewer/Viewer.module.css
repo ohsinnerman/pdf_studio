@@ -1,0 +1,33 @@
+.scroller {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  /* Keep the scrollbar from shifting the layout when it appears. */
+  scrollbar-gutter: stable;
+}
+
+.track {
+  position: relative;
+  margin: 0 auto;
+}
+
+.item {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.page {
+  position: relative;
+  background: var(--paper);
+  box-shadow: var(--paper-shadow);
+  flex: none;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
