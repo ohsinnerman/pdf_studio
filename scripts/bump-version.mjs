@@ -21,9 +21,6 @@ const SEMVER = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/;
 function readJson(file) {
   return JSON.parse(readFileSync(path(file), 'utf8'));
 }
-function writeJson(file, data) {
-  writeFileSync(path(file), JSON.stringify(data, null, 2) + '\n');
-}
 
 const CARGO_VERSION = /^(\[package\][^[]*?\nversion\s*=\s*")([^"]+)(")/m;
 
@@ -47,21 +44,23 @@ function nextPatch(version) {
   return `${major}.${minor}.${Number(patch) + 1}${pre ? `-${pre}` : ''}`;
 }
 
+// Replace version strings in place (instead of re-serialising) so file formatting is untouched.
+function replaceJsonVersion(file, version, occurrences = 1) {
+  const full = path(file);
+  let text = readFileSync(full, 'utf8');
+  let replaced = 0;
+  text = text.replace(/("version"\s*:\s*")[^"]+(")/g, (match, a, b) =>
+    replaced++ < occurrences ? `${a}${version}${b}` : match,
+  );
+  if (replaced < occurrences) throw new Error(`Expected ${occurrences} version field(s) in ${file}`);
+  writeFileSync(full, text);
+}
+
 function setVersion(version) {
-  const pkg = readJson('package.json');
-  pkg.version = version;
-  writeJson('package.json', pkg);
-
-  if (existsSync(path('package-lock.json'))) {
-    const lock = readJson('package-lock.json');
-    lock.version = version;
-    if (lock.packages?.['']) lock.packages[''].version = version;
-    writeJson('package-lock.json', lock);
-  }
-
-  const conf = readJson('src-tauri/tauri.conf.json');
-  conf.version = version;
-  writeJson('src-tauri/tauri.conf.json', conf);
+  replaceJsonVersion('package.json', version);
+  replaceJsonVersion('src-tauri/tauri.conf.json', version);
+  // package-lock.json stores our version twice: at the top and under packages[""].
+  if (existsSync(path('package-lock.json'))) replaceJsonVersion('package-lock.json', version, 2);
 
   const cargoPath = path('src-tauri/Cargo.toml');
   const cargo = readFileSync(cargoPath, 'utf8');

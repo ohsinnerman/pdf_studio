@@ -1,7 +1,7 @@
 {
   "name": "pdf-studio",
   "private": true,
-  "version": "1.0.0-pre-alpha",
+  "version": "1.0.1-pre-alpha",
   "description": "A free, offline desktop PDF editor for Windows.",
   "license": "AGPL-3.0-or-later",
   "author": "Akul Shrivastava",
@@ -17,6 +17,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && node scripts/bump-version.mjs --check",
     "tauri": "tauri",
     "app:dev": "tauri dev",
     "app:build": "tauri build",
@@ -27,12 +34,20 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tauri-apps/cli": "^2.12.4",
     "@types/node": "^22.20.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "eslint": "^10.14.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
     "typescript": "~6.0.3",
-    "vite": "^8.3.8"
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
   }
 }

@@ -20,15 +20,15 @@ Editing a PDF usually means paying for Acrobat or uploading a private document t
 
 ## Features
 
-| | Status |
-|---|---|
-| Open and view PDFs (virtualised, smooth on big files) | in progress |
-| Page thumbnails, rotate, delete, reorder | in progress |
-| Undo / redo for every change | in progress |
-| Safe saving (never corrupts the original) | in progress |
-| Highlight, draw, shapes, text boxes, images | planned (Phase 1) |
-| Forms, signatures, true redaction, compression | planned (Phase 2) |
-| OCR, editing existing text | planned (Phase 3) |
+|                                                       | Status            |
+| ----------------------------------------------------- | ----------------- |
+| Open and view PDFs (virtualised, smooth on big files) | in progress       |
+| Page thumbnails, rotate, delete, reorder              | in progress       |
+| Undo / redo for every change                          | in progress       |
+| Safe saving (never corrupts the original)             | in progress       |
+| Highlight, draw, shapes, text boxes, images           | planned (Phase 1) |
+| Forms, signatures, true redaction, compression        | planned (Phase 2) |
+| OCR, editing existing text                            | planned (Phase 3) |
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it's built and the [roadmap](docs/ARCHITECTURE.md#16-roadmap-revised).
 

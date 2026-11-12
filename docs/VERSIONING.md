@@ -25,12 +25,12 @@ PDF Studio uses [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH[-P
 
 The pre-release tag changes when the app's quality does, not on a schedule:
 
-| Stage | Meaning | Example |
-|---|---|---|
-| `pre-alpha` | Features being built; may lose work | `1.0.12-pre-alpha` |
-| `alpha` | Phase 1 feature-complete; used daily by the author | `1.1.0-alpha` |
-| `beta` | Phase 2 complete; shared with friends | `1.2.0-beta` |
-| *(none)* | Stable | `1.2.0` |
+| Stage       | Meaning                                            | Example            |
+| ----------- | -------------------------------------------------- | ------------------ |
+| `pre-alpha` | Features being built; may lose work                | `1.0.12-pre-alpha` |
+| `alpha`     | Phase 1 feature-complete; used daily by the author | `1.1.0-alpha`      |
+| `beta`      | Phase 2 complete; shared with friends              | `1.2.0-beta`       |
+| _(none)_    | Stable                                             | `1.2.0`            |
 
 At each stage change, use the explicit form of `version:bump`.
 

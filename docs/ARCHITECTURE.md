@@ -6,18 +6,18 @@
 
 ## 0. Decisions at a glance
 
-| # | Decision | Choice | Main alternative | Why, in one line |
-|---|----------|--------|------------------|------------------|
-| 1 | App shell | **Tauri 2** | Electron | 10–20 MB app instead of 100 MB+, real security model, Rust only as thin glue |
-| 2 | PDF engine | **MuPDF.js (WASM)** — one engine for everything | pdf.js + pdf-lib | One parser renders *and* edits; has true redaction, text geometry, undo journal. AGPL doesn't matter since we're not selling |
-| 3 | Threading | **Engine in a Web Worker**, talked to via Comlink | Engine on main thread | Rendering a heavy page must never freeze the UI |
-| 4 | Edit model | **Live document + MuPDF journal** for undo/redo; user additions are **real PDF annotations** | Op list replayed on save (my earlier brief) | What you see *is* the PDF; edits stay editable in Acrobat/Edge/Chrome too |
-| 5 | Edit overlay | **SVG overlay** for handles, selection, drawing | Konva canvas | The engine draws the final look; the overlay only draws temporary UI, so a scene-graph library is overkill |
-| 6 | UI | **React + TypeScript + Vite**, Zustand, Radix primitives, dnd-kit, TanStack Virtual | Svelte, Redux | You already know React; these libraries are small and do one job each |
-| 7 | Saving | **Atomic full save** by default (temp file → rename), incremental save as an option, crash-recovery snapshots | Overwrite in place | A crash mid-write must never destroy the original |
-| 8 | Fonts | **Bundled Noto fonts** (Latin, Devanagari, ₹) embedded as subsets | PDF built-in fonts only | Built-in fonts can't even type ₹ |
-| 9 | OCR (Phase 3) | **tesseract.js in its own worker**, language data bundled | Python sidecar | Keeps the whole app one language, fully offline |
-| 10 | Python sidecar | **Dropped** | PyMuPDF via PyInstaller | MuPDF.js covers what we needed Python for |
+| #   | Decision       | Choice                                                                                                        | Main alternative                            | Why, in one line                                                                                                             |
+| --- | -------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1   | App shell      | **Tauri 2**                                                                                                   | Electron                                    | 10–20 MB app instead of 100 MB+, real security model, Rust only as thin glue                                                 |
+| 2   | PDF engine     | **MuPDF.js (WASM)** — one engine for everything                                                               | pdf.js + pdf-lib                            | One parser renders _and_ edits; has true redaction, text geometry, undo journal. AGPL doesn't matter since we're not selling |
+| 3   | Threading      | **Engine in a Web Worker**, talked to via Comlink                                                             | Engine on main thread                       | Rendering a heavy page must never freeze the UI                                                                              |
+| 4   | Edit model     | **Live document + MuPDF journal** for undo/redo; user additions are **real PDF annotations**                  | Op list replayed on save (my earlier brief) | What you see _is_ the PDF; edits stay editable in Acrobat/Edge/Chrome too                                                    |
+| 5   | Edit overlay   | **SVG overlay** for handles, selection, drawing                                                               | Konva canvas                                | The engine draws the final look; the overlay only draws temporary UI, so a scene-graph library is overkill                   |
+| 6   | UI             | **React + TypeScript + Vite**, Zustand, Radix primitives, dnd-kit, TanStack Virtual                           | Svelte, Redux                               | You already know React; these libraries are small and do one job each                                                        |
+| 7   | Saving         | **Atomic full save** by default (temp file → rename), incremental save as an option, crash-recovery snapshots | Overwrite in place                          | A crash mid-write must never destroy the original                                                                            |
+| 8   | Fonts          | **Bundled Noto fonts** (Latin, Devanagari, ₹) embedded as subsets                                             | PDF built-in fonts only                     | Built-in fonts can't even type ₹                                                                                             |
+| 9   | OCR (Phase 3)  | **tesseract.js in its own worker**, language data bundled                                                     | Python sidecar                              | Keeps the whole app one language, fully offline                                                                              |
+| 10  | Python sidecar | **Dropped**                                                                                                   | PyMuPDF via PyInstaller                     | MuPDF.js covers what we needed Python for                                                                                    |
 
 Two of these change the brief I wrote earlier (engine, and the edit model). Section 4 and 6 explain why.
 
@@ -27,15 +27,15 @@ Two of these change the brief I wrote earlier (engine, and the edit model). Sect
 
 A PDF is not a document format in the Word sense. It's closer to a **frozen print job**.
 
-- **Objects.** A PDF file is a bag of numbered objects (dictionaries, arrays, numbers, strings, binary *streams*). A cross-reference table (**xref**) at the end of the file says where each object starts, so readers can jump straight to it.
+- **Objects.** A PDF file is a bag of numbered objects (dictionaries, arrays, numbers, strings, binary _streams_). A cross-reference table (**xref**) at the end of the file says where each object starts, so readers can jump straight to it.
 - **Pages.** Each page object points to a **content stream** (a little drawing program) and **resources** (the fonts, images and colour spaces that program uses).
-- **Content streams** are instructions like: *set font F1 at 12pt, move to (72, 700), draw glyphs "Hello"*. There are no paragraphs, no lines, no reflow — only "this glyph goes at this coordinate". That's why "edit existing text" is hard: there is no text box to edit, just positioned glyphs.
+- **Content streams** are instructions like: _set font F1 at 12pt, move to (72, 700), draw glyphs "Hello"_. There are no paragraphs, no lines, no reflow — only "this glyph goes at this coordinate". That's why "edit existing text" is hard: there is no text box to edit, just positioned glyphs.
 - **Fonts** are usually **subset-embedded**: only the glyphs actually used are stored. If the page says "Invoice" and you want to type "Z", the embedded font may simply not contain a Z.
 - **Coordinates.** Units are **points** (1/72 inch). Origin is **bottom-left**, y goes **up**. Screens are top-left, y goes down. Pages can also have a `/Rotate` and a cropbox offset. Every bug you'll ever have with "the box landed in the wrong place" lives here.
-- **Annotations** are objects that sit *on top of* the page content, separate from it: highlights, ink, notes, free text, stamps, links, and form fields (*widgets*). Each annotation carries an **appearance stream** — its own mini content stream describing how it looks — so any viewer can draw it identically. Annotations stay movable and deletable. **Flattening** an annotation means merging its appearance into the page content so it becomes permanent.
+- **Annotations** are objects that sit _on top of_ the page content, separate from it: highlights, ink, notes, free text, stamps, links, and form fields (_widgets_). Each annotation carries an **appearance stream** — its own mini content stream describing how it looks — so any viewer can draw it identically. Annotations stay movable and deletable. **Flattening** an annotation means merging its appearance into the page content so it becomes permanent.
 - **Forms** (AcroForm) are widget annotations plus field values. (There's also XFA, an old Adobe XML form format — mostly dead, we will not support it.)
-- **Incremental updates.** A PDF can be changed by *appending* new versions of objects plus a new xref to the end of the file, leaving the original bytes untouched. Digital signatures depend on this. The alternative is a **full rewrite**, which produces a clean, often smaller file.
-- **Redaction** done properly means *removing* the text/image data under a region, not drawing a black box over it. A black rectangle over text leaves the text copy-pasteable — a classic real-world leak.
+- **Incremental updates.** A PDF can be changed by _appending_ new versions of objects plus a new xref to the end of the file, leaving the original bytes untouched. Digital signatures depend on this. The alternative is a **full rewrite**, which produces a clean, often smaller file.
+- **Redaction** done properly means _removing_ the text/image data under a region, not drawing a black box over it. A black rectangle over text leaves the text copy-pasteable — a classic real-world leak.
 - **Encryption.** PDFs can be password-protected (open password) or permission-restricted (owner password: "no printing", etc.).
 
 Keep this model in mind: **render** = run content streams + annotation appearances into pixels. **Edit** = add/change objects, mostly annotations. **Hard edit** = rewrite content streams.
@@ -60,15 +60,15 @@ These are the constraints every decision is measured against:
 
 ### Options
 
-| Option | How it works | Installer size | Pros | Cons |
-|--------|-------------|----------------|------|------|
-| **Tauri 2** ✅ | Your React app runs in the OS's built-in webview (on Windows: **WebView2**, which is Chromium/Edge). A small Rust process owns the window, files and OS access. | ~10–20 MB with our WASM engine | Tiny; fast startup; low RAM; explicit permission system ("capabilities"); first-class installers (NSIS/MSI), file associations, auto-updater | Some Rust; webview differs per OS (irrelevant: we're Windows-only and WebView2 *is* Chromium) |
-| **Electron** | Ships a whole Chromium + Node.js with your app. | ~100 MB+ | Pure JS/TS everywhere; huge ecosystem; identical rendering everywhere | Heavy; each app carries its own browser; Node in the app widens the attack surface unless you lock it down carefully |
-| **Wails** (Go) | Like Tauri but the backend is Go | small | Simple; Go is easy | Smaller ecosystem; you'd learn Go instead of Rust for little benefit |
-| **Native .NET (WPF/WinUI)** | C# desktop UI | small | Truly native Windows feel | New language + UI framework; PDF engines for .NET are mostly commercial or wrappers; throws away your React skills |
-| **Qt (C++/Python)** | Native cross-platform UI toolkit | medium | Very capable; PyQt + PyMuPDF is a classic combo | Different UI paradigm; Qt licensing nuances; you'd be learning a toolkit, not building the product |
-| **Flutter desktop** | Dart, own renderer | medium | Nice UI | No strong PDF editing engine in Dart; new language |
-| **Browser PWA** | Just a website installed as an app | 0 | Simplest | Weaker file-system access, file associations, "Open with…" from Explorer; feels less like a real app |
+| Option                      | How it works                                                                                                                                                    | Installer size                 | Pros                                                                                                                                         | Cons                                                                                                                 |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Tauri 2** ✅              | Your React app runs in the OS's built-in webview (on Windows: **WebView2**, which is Chromium/Edge). A small Rust process owns the window, files and OS access. | ~10–20 MB with our WASM engine | Tiny; fast startup; low RAM; explicit permission system ("capabilities"); first-class installers (NSIS/MSI), file associations, auto-updater | Some Rust; webview differs per OS (irrelevant: we're Windows-only and WebView2 _is_ Chromium)                        |
+| **Electron**                | Ships a whole Chromium + Node.js with your app.                                                                                                                 | ~100 MB+                       | Pure JS/TS everywhere; huge ecosystem; identical rendering everywhere                                                                        | Heavy; each app carries its own browser; Node in the app widens the attack surface unless you lock it down carefully |
+| **Wails** (Go)              | Like Tauri but the backend is Go                                                                                                                                | small                          | Simple; Go is easy                                                                                                                           | Smaller ecosystem; you'd learn Go instead of Rust for little benefit                                                 |
+| **Native .NET (WPF/WinUI)** | C# desktop UI                                                                                                                                                   | small                          | Truly native Windows feel                                                                                                                    | New language + UI framework; PDF engines for .NET are mostly commercial or wrappers; throws away your React skills   |
+| **Qt (C++/Python)**         | Native cross-platform UI toolkit                                                                                                                                | medium                         | Very capable; PyQt + PyMuPDF is a classic combo                                                                                              | Different UI paradigm; Qt licensing nuances; you'd be learning a toolkit, not building the product                   |
+| **Flutter desktop**         | Dart, own renderer                                                                                                                                              | medium                         | Nice UI                                                                                                                                      | No strong PDF editing engine in Dart; new language                                                                   |
+| **Browser PWA**             | Just a website installed as an app                                                                                                                              | 0                              | Simplest                                                                                                                                     | Weaker file-system access, file associations, "Open with…" from Explorer; feels less like a real app                 |
 
 ### Recommendation: Tauri 2
 
@@ -87,25 +87,25 @@ This decides what features are easy, what's hard, and what's impossible.
 
 ### Options
 
-| Option | Licence | Render | Page ops | Annotations | Forms | True redaction | Edit existing text | Notes |
-|--------|---------|--------|----------|-------------|-------|----------------|--------------------|-------|
-| **pdf.js + pdf-lib** (my earlier brief) | Apache-2.0 / MIT | ✅ excellent (Firefox's engine) | via pdf-lib ✅ | pdf.js has an editor for basic ones; pdf-lib writes low-level | ✅ basic | ❌ | ❌ | **Two separate parsers** for the same file. pdf-lib's last release was 1.17.1 in 2021 and it's effectively unmaintained (a maintained fork exists: `@cantoo/pdf-lib`). No compression, no OCR text layer, no font-aware text extraction for editing |
-| **MuPDF.js** (WASM build of MuPDF, by Artifex) ✅ | AGPL-3.0 (or paid) | ✅ excellent | ✅ insert/delete/rotate/graft (merge) | ✅ full set: highlight, ink, free text, shapes, stamps, redaction | ✅ | ✅ removes text/images/vector art | primitives ✅ (redact + re-insert) | **One engine** for everything; same core as PyMuPDF; has an **undo journal** that works in WASM; precise text geometry (`StructuredText`) for selection, search and highlights; save with garbage collection + compression |
-| **PDFium** via `pdfium-render` (Rust) | BSD/Apache | ✅ (Chrome's engine) | ✅ | ✅ | ✅ | partial | page objects editable | Excellent, permissive — but all logic would live in **Rust**, which breaks "keep Rust minimal" |
-| **PyMuPDF sidecar** (Python process) | AGPL | ✅ | ✅ | ✅ | ✅ | ✅ | best-documented | Same engine as MuPDF.js but via a separate process: +50–80 MB bundle, slow startup, IPC for every render, two languages |
-| **Commercial SDKs** (Apryse, Nutrient/PSPDFKit) | Paid | ✅✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Defeats the point of the project |
+| Option                                            | Licence            | Render                          | Page ops                              | Annotations                                                       | Forms    | True redaction                    | Edit existing text                 | Notes                                                                                                                                                                                                                                               |
+| ------------------------------------------------- | ------------------ | ------------------------------- | ------------------------------------- | ----------------------------------------------------------------- | -------- | --------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **pdf.js + pdf-lib** (my earlier brief)           | Apache-2.0 / MIT   | ✅ excellent (Firefox's engine) | via pdf-lib ✅                        | pdf.js has an editor for basic ones; pdf-lib writes low-level     | ✅ basic | ❌                                | ❌                                 | **Two separate parsers** for the same file. pdf-lib's last release was 1.17.1 in 2021 and it's effectively unmaintained (a maintained fork exists: `@cantoo/pdf-lib`). No compression, no OCR text layer, no font-aware text extraction for editing |
+| **MuPDF.js** (WASM build of MuPDF, by Artifex) ✅ | AGPL-3.0 (or paid) | ✅ excellent                    | ✅ insert/delete/rotate/graft (merge) | ✅ full set: highlight, ink, free text, shapes, stamps, redaction | ✅       | ✅ removes text/images/vector art | primitives ✅ (redact + re-insert) | **One engine** for everything; same core as PyMuPDF; has an **undo journal** that works in WASM; precise text geometry (`StructuredText`) for selection, search and highlights; save with garbage collection + compression                          |
+| **PDFium** via `pdfium-render` (Rust)             | BSD/Apache         | ✅ (Chrome's engine)            | ✅                                    | ✅                                                                | ✅       | partial                           | page objects editable              | Excellent, permissive — but all logic would live in **Rust**, which breaks "keep Rust minimal"                                                                                                                                                      |
+| **PyMuPDF sidecar** (Python process)              | AGPL               | ✅                              | ✅                                    | ✅                                                                | ✅       | ✅                                | best-documented                    | Same engine as MuPDF.js but via a separate process: +50–80 MB bundle, slow startup, IPC for every render, two languages                                                                                                                             |
+| **Commercial SDKs** (Apryse, Nutrient/PSPDFKit)   | Paid               | ✅✅                            | ✅                                    | ✅                                                                | ✅       | ✅                                | ✅                                 | Defeats the point of the project                                                                                                                                                                                                                    |
 
 ### Recommendation: MuPDF.js as the single engine
 
-**Why this changes my earlier brief.** I originally recommended pdf.js + pdf-lib *because they're permissively licensed*, and only reached for MuPDF (via a Python sidecar) for the hard features. You've now said you'll never sell this. That removes the only real argument against MuPDF, and MuPDF wins on almost every technical axis:
+**Why this changes my earlier brief.** I originally recommended pdf.js + pdf-lib _because they're permissively licensed_, and only reached for MuPDF (via a Python sidecar) for the hard features. You've now said you'll never sell this. That removes the only real argument against MuPDF, and MuPDF wins on almost every technical axis:
 
 1. **One parser, one truth.** With pdf.js + pdf-lib, pdf.js reads the file to display it and pdf-lib reads it again to modify it. They can disagree on malformed files (very common in the wild), and after every edit you'd have to re-serialise with pdf-lib and re-load in pdf.js to see the result. With MuPDF, the same in-memory document is rendered, edited, re-rendered and saved.
-2. **The hard features are built in.** True redaction (`applyRedactions`), text extraction with per-character position *and font* (needed for Phase 3 text editing), search returning exact quads, compression on save, merging via `graftPage`.
-3. **Undo/redo for free (almost).** MuPDF has a **journal**: wrap each user action in `beginOperation("Rotate page 3")` … `endOperation()` and the engine can `undo()`/`redo()` any change, including page operations. This is supported in the WASM build (only *saving* the journal to disk is not).
+2. **The hard features are built in.** True redaction (`applyRedactions`), text extraction with per-character position _and font_ (needed for Phase 3 text editing), search returning exact quads, compression on save, merging via `graftPage`.
+3. **Undo/redo for free (almost).** MuPDF has a **journal**: wrap each user action in `beginOperation("Rotate page 3")` … `endOperation()` and the engine can `undo()`/`redo()` any change, including page operations. This is supported in the WASM build (only _saving_ the journal to disk is not).
 4. **No Python sidecar.** Phase 3 no longer needs a second runtime, PyInstaller, or a 60 MB bundle. The whole app is TypeScript + a bit of Rust.
 5. **Maintained.** MuPDF.js hit 1.0 in Nov 2024 and is actively developed by Artifex, the company behind Ghostscript and MuPDF.
 
-**What AGPL actually means for you.** AGPL (like GPL) obliges you to share your source code with anyone you *distribute* the program to. Using it yourself: no obligations. Giving the .exe to friends: that's distribution, so you must offer them the source — which is satisfied by keeping the repo public on GitHub (`ohsinnerman/pdf_studio`) under AGPL. The "network" clause of AGPL only matters for software offered as a web service; not our case. (I'm not a lawyer, but this is the standard reading.)
+**What AGPL actually means for you.** AGPL (like GPL) obliges you to share your source code with anyone you _distribute_ the program to. Using it yourself: no obligations. Giving the .exe to friends: that's distribution, so you must offer them the source — which is satisfied by keeping the repo public on GitHub (`ohsinnerman/pdf_studio`) under AGPL. The "network" clause of AGPL only matters for software offered as a web service; not our case. (I'm not a lawyer, but this is the standard reading.)
 
 **Costs and risks, honestly:**
 
@@ -114,7 +114,7 @@ This decides what features are easy, what's hard, and what's impossible.
 - **Some functions are "mutool only".** A few methods in MuPDF's JS docs (e.g. `setStampImage`, `saveJournal`) don't exist in the WASM build. We'll check every API we rely on in the spikes.
 - **Text boxes with custom fonts are fiddly.** MuPDF's built-in FreeText appearance only supports the three standard fonts (Helvetica, Times, Courier). For Noto/Devanagari/₹ we generate the appearance ourselves (see §8). **🔬 Spike 2.**
 
-**What I'd keep from the old plan:** nothing in the engine layer. pdf.js would still be a fine *viewer* if MuPDF disappoints in Spike 1, and the engine adapter (§13) makes swapping possible.
+**What I'd keep from the old plan:** nothing in the engine layer. pdf.js would still be a fine _viewer_ if MuPDF disappoints in Spike 1, and the engine adapter (§13) makes swapping possible.
 
 ---
 
@@ -127,14 +127,14 @@ JavaScript in the webview runs your UI on **one main thread**. Rendering a dense
 ### Options
 
 1. **Main thread** — simplest, and wrong for us.
-2. **Web Worker** ✅ — a separate JS thread inside the webview. The MuPDF WASM module is loaded *inside the worker*. The UI sends requests ("render page 4 at 150%") and gets results back.
+2. **Web Worker** ✅ — a separate JS thread inside the webview. The MuPDF WASM module is loaded _inside the worker_. The UI sends requests ("render page 4 at 150%") and gets results back.
 3. **Rust side** — move rendering into the Tauri process (PDFium). Fast, but we've decided against heavy Rust.
 4. **Multiple workers (pool)** — render several pages in parallel. Tempting, but each worker would need its own copy of the document in memory, and edits would have to be synchronised between them. Not worth it at first.
 
 ### Recommendation: one engine worker + one OCR worker (Phase 3)
 
 - **Comlink** (tiny library from Google Chrome Labs) turns `postMessage` into normal async function calls: `await engine.renderPage(4, 1.5)`. Without it you'd hand-write a message protocol with request IDs — a good exercise to understand, but tedious to maintain. I'd suggest reading Comlink's ~300 lines once so it isn't magic.
-- **Transferables.** Rendered pixels come back as an `ImageBitmap` or `ArrayBuffer` that is *transferred* (moved, zero-copy) rather than copied. For a 2000×2800 page that's 22 MB we don't copy every render.
+- **Transferables.** Rendered pixels come back as an `ImageBitmap` or `ArrayBuffer` that is _transferred_ (moved, zero-copy) rather than copied. For a 2000×2800 page that's 22 MB we don't copy every render.
 - **Priority queue + cancellation.** When you scroll fast, requests for pages that have already scrolled off-screen are dropped before they start. Without this, fast scrolling queues dozens of useless renders.
 - **The worker is the single owner of the document.** The UI never holds PDF objects, only plain data (page sizes, annotation lists, pixels). This keeps the boundary clean and is what makes the engine swappable.
 
@@ -142,14 +142,14 @@ JavaScript in the webview runs your UI on **one main thread**. Rendering a dense
 
 ## 6. Decision 4 — The document & editing model
 
-This is the heart of the architecture: *where does the truth live, and how do edits flow?*
+This is the heart of the architecture: _where does the truth live, and how do edits flow?_
 
 ### Option A — Op list replayed on save (my earlier brief)
 
 The original file is read-only. Every edit is a JSON operation (`{type:"addText", page:2, x, y, …}`) in a list. The screen shows the original render plus overlay objects drawn by the UI. On save, all ops are replayed into a fresh copy.
 
 - ✅ Simple undo (move a pointer in the list), engine-agnostic, original untouched.
-- ❌ **Two renderers.** The overlay (drawn by the browser) and the saved result (drawn by the PDF engine) are different code paths. Fonts, line widths and colours *will* differ slightly — what you see isn't exactly what you get.
+- ❌ **Two renderers.** The overlay (drawn by the browser) and the saved result (drawn by the PDF engine) are different code paths. Fonts, line widths and colours _will_ differ slightly — what you see isn't exactly what you get.
 - ❌ Edits aren't "in" the PDF until save, so features that read the document (search, text selection, page thumbnails, redaction previews) don't see them.
 - ❌ Save gets slower as ops grow, and replay bugs only show up at save time.
 
@@ -160,7 +160,7 @@ The worker holds the open `PDFDocument`. Every user action is a **command** that
 - ✅ **True WYSIWYG** — the pixels on screen come from the same engine that writes the file.
 - ✅ Search, thumbnails, selection all see edits instantly.
 - ✅ Saving is just `saveToBuffer()` — instant and boring (boring is good).
-- ✅ Undo/redo handled by MuPDF's journal, covering *everything*, including page deletes and redactions.
+- ✅ Undo/redo handled by MuPDF's journal, covering _everything_, including page deletes and redactions.
 - ❌ Tied to MuPDF (mitigated by the engine adapter).
 - ❌ The journal lives in memory; can't be persisted in WASM, so crash recovery uses periodic snapshots instead (§9).
 
@@ -180,23 +180,23 @@ UI: bump revision → invalidate renders of page 3 → re-render
 
 ### Annotations vs page content — what an "edit" actually becomes
 
-| User action | Stored as | Why |
-|-------------|-----------|-----|
-| Highlight / underline / strike text | Text-markup annotation with QuadPoints | Standard; other viewers show and edit it |
-| Freehand drawing | Ink annotation | Same |
-| Rectangle, ellipse, line, arrow | Square / Circle / Line annotation | Same |
-| Sticky note | Text annotation | Same |
-| Text box | FreeText annotation, custom appearance for non-standard fonts | Stays movable/editable later, in our app and others |
-| Image / signature | Stamp annotation with image appearance | Movable later; flatten when finalising |
-| Whiteout | Square annotation, white fill | Just covers; honestly labelled "cover", not "remove" |
-| **Redact** | Redaction annotation → `applyRedactions` | Actually deletes the underlying text/image data |
-| Fill form | Widget field values | That's what forms are |
-| Rotate / delete / reorder / merge | Page tree changes | No annotations involved |
-| Edit existing text (Phase 3) | Redact the span + write new text into the content | The only real way to change baked-in text |
+| User action                         | Stored as                                                     | Why                                                  |
+| ----------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------- |
+| Highlight / underline / strike text | Text-markup annotation with QuadPoints                        | Standard; other viewers show and edit it             |
+| Freehand drawing                    | Ink annotation                                                | Same                                                 |
+| Rectangle, ellipse, line, arrow     | Square / Circle / Line annotation                             | Same                                                 |
+| Sticky note                         | Text annotation                                               | Same                                                 |
+| Text box                            | FreeText annotation, custom appearance for non-standard fonts | Stays movable/editable later, in our app and others  |
+| Image / signature                   | Stamp annotation with image appearance                        | Movable later; flatten when finalising               |
+| Whiteout                            | Square annotation, white fill                                 | Just covers; honestly labelled "cover", not "remove" |
+| **Redact**                          | Redaction annotation → `applyRedactions`                      | Actually deletes the underlying text/image data      |
+| Fill form                           | Widget field values                                           | That's what forms are                                |
+| Rotate / delete / reorder / merge   | Page tree changes                                             | No annotations involved                              |
+| Edit existing text (Phase 3)        | Redact the span + write new text into the content             | The only real way to change baked-in text            |
 
 Plus a **"Flatten"** command (per-annotation or whole document) for when you're sending a final copy and don't want the recipient moving your signature.
 
-**Why annotations instead of drawing straight into the page content?** Because they keep your edits *editable*: reopen the file next week and move that text box. Acrobat, Edge and Chrome will also show them correctly, since each annotation carries its own appearance stream.
+**Why annotations instead of drawing straight into the page content?** Because they keep your edits _editable_: reopen the file next week and move that text box. Acrobat, Edge and Chrome will also show them correctly, since each annotation carries its own appearance stream.
 
 ### UI-only state (never goes in the PDF or journal)
 
@@ -208,12 +208,12 @@ Zoom, scroll position, current tool, tool settings (pen colour, font size), sele
 
 What happens between "page 47 scrolled into view" and "you see it":
 
-1. **Virtualised page list.** Only pages near the viewport exist in the DOM (TanStack Virtual). A 500-page document has ~5 page elements, not 500. Page *sizes* for all pages are fetched once at open so the scrollbar is correct before anything renders.
+1. **Virtualised page list.** Only pages near the viewport exist in the DOM (TanStack Virtual). A 500-page document has ~5 page elements, not 500. Page _sizes_ for all pages are fetched once at open so the scrollbar is correct before anything renders.
 2. **Two-pass render.** First a cheap low-resolution render (or the thumbnail, scaled up) so the page never appears blank; then the sharp render.
 3. **Device pixel ratio.** On a 150%-scaled Windows laptop screen, a 100% zoom page needs 1.5× pixels or it looks blurry. Render scale = `zoom × devicePixelRatio × (72→96 conversion)`.
 4. **Tiling at high zoom.** At 400% an A4 page is ~13,000 px tall — too big for one canvas (browsers cap canvas size and memory explodes). Above a threshold, render only the visible tiles of the page at full resolution. This is a Phase 1.5 improvement — start without it but design the render request as `renderRegion(page, scale, clipRect)` from day one so tiles are a change in the caller, not the engine.
 5. **Caches.** An LRU cache of rendered bitmaps (by memory budget, e.g. 300 MB) and a separate thumbnail cache. Close a bitmap (`ImageBitmap.close()`) when evicted — GPU memory doesn't garbage-collect promptly.
-6. **Annotations are drawn by the engine**, as part of the page render — that's what makes the screen faithful. The overlay (next section) only draws *interaction*.
+6. **Annotations are drawn by the engine**, as part of the page render — that's what makes the screen faithful. The overlay (next section) only draws _interaction_.
 
 ---
 
@@ -222,13 +222,13 @@ What happens between "page 47 scrolled into view" and "you see it":
 ### Framework: React + TypeScript + Vite
 
 - **React** — you know it, and every library we need (virtualisation, drag-and-drop, accessible menus) has a mature React version. Svelte or Solid would be faster and smaller, and fun to learn, but you'd be learning two hard things at once. The PDF part is the interesting learning here.
-- **TypeScript (strict mode)** — the coordinate code especially benefits from types: we'll use *branded types* so `PdfPoint` and `ScreenPoint` can't be mixed up by accident. That one trick prevents the most common class of bugs in PDF editors.
+- **TypeScript (strict mode)** — the coordinate code especially benefits from types: we'll use _branded types_ so `PdfPoint` and `ScreenPoint` can't be mixed up by accident. That one trick prevents the most common class of bugs in PDF editors.
 - **Vite** — fast dev server; Tauri's official template uses it; handles WASM and module workers.
 
 ### State: Zustand
 
-- **Why Zustand:** tiny, no boilerplate, and stores can be read/written *outside* React components — useful because worker callbacks update state.
-- **Alternatives:** Redux Toolkit (more ceremony, great devtools — overkill here); Jotai (atom-based, also good); XState (state machines — actually a nice fit for *tool interactions*, see below, but heavy for global state).
+- **Why Zustand:** tiny, no boilerplate, and stores can be read/written _outside_ React components — useful because worker callbacks update state.
+- **Alternatives:** Redux Toolkit (more ceremony, great devtools — overkill here); Jotai (atom-based, also good); XState (state machines — actually a nice fit for _tool interactions_, see below, but heavy for global state).
 - **Stores, split by reason-to-change:** `documentStore` (open docs, page sizes, revisions, dirty flag), `viewStore` (zoom, scroll, layout), `toolStore` (active tool + settings), `selectionStore`.
 
 ### Tools as small state machines
@@ -239,7 +239,7 @@ Each tool (select, highlight, pen, text, rectangle, redact, …) is an object wi
 
 On top of each page bitmap sits an absolutely-positioned **SVG** in page coordinates. It draws: selection boxes and resize handles, the rubber-band rectangle while dragging, the live ink stroke while drawing, text-selection highlights, and search hits.
 
-- **Why not Konva anymore?** In the old design, Konva *was* the renderer for user objects, so it needed a scene graph. Now the engine renders everything permanent; the overlay only shows a handful of temporary shapes. SVG does that natively in React, stays crisp at any zoom, gets browser hit-testing and accessibility for free, and is one less library.
+- **Why not Konva anymore?** In the old design, Konva _was_ the renderer for user objects, so it needed a scene graph. Now the engine renders everything permanent; the overlay only shows a handful of temporary shapes. SVG does that natively in React, stays crisp at any zoom, gets browser hit-testing and accessibility for free, and is one less library.
 - **When would we need canvas?** If live ink with thousands of points gets sluggish. Then just the in-progress stroke moves to a small canvas.
 - **Text boxes while typing:** a real `<textarea>` positioned over the page (so typing, IME for Hindi/Kannada, spellcheck and clipboard all just work). On blur it's committed as a command and the engine draws the final version.
 
@@ -283,7 +283,7 @@ Your project folder is under OneDrive. That's fine for source code, but for test
 
 - **The 14 standard PDF fonts** (Helvetica, Times, Courier…) need no embedding but only cover Western European characters. **They can't type ₹**, let alone Hindi or Kannada.
 - **Plan:** bundle a small set of open-licensed fonts (OFL): **Noto Sans / Noto Serif** (Latin, including ₹), **Noto Sans Devanagari** (Hindi/Marathi), optionally **Noto Sans Kannada**, and a monospace font. Embedded as **subsets** (`addFont` creates an Identity-H CID font), so a text box adds kilobytes, not megabytes.
-- **Complex scripts need shaping.** Devanagari letters change form and combine (conjuncts, matras). Correct output needs a *shaping engine* (HarfBuzz). MuPDF includes HarfBuzz for its own layout features; whether we can drive it from JS for annotation appearances is part of **🔬 Spike 2**. Fallback for Phase 1: Latin + ₹ only, with Indic text boxes deferred.
+- **Complex scripts need shaping.** Devanagari letters change form and combine (conjuncts, matras). Correct output needs a _shaping engine_ (HarfBuzz). MuPDF includes HarfBuzz for its own layout features; whether we can drive it from JS for annotation appearances is part of **🔬 Spike 2**. Fallback for Phase 1: Latin + ₹ only, with Indic text boxes deferred.
 - **System fonts:** letting you pick any installed Windows font is a nice later feature (read the font file via Rust, hand bytes to the engine).
 
 ---
@@ -338,8 +338,8 @@ PDFs are a classic malware delivery format, and a PDF editor is a parser of untr
 └──────────────────────────────┴────────────────────────────┘
 ```
 
-- **Engine adapter** (`src/engine/`): the *only* code that imports `mupdf`. Exposes our own interface (`openDocument`, `renderRegion`, `getPageInfo`, `getAnnotations`, `runCommand`, `undo`, `redo`, `save`, `search`, `getTextAt`). If MuPDF disappoints, we replace this folder, not the app.
-- **Platform adapter** (`src/platform/`): the *only* code that imports `@tauri-apps/*`. Exposes `openFileDialog`, `readFile`, `saveAtomic`, `onFileOpened`. Swapping to Electron = rewriting this folder.
+- **Engine adapter** (`src/engine/`): the _only_ code that imports `mupdf`. Exposes our own interface (`openDocument`, `renderRegion`, `getPageInfo`, `getAnnotations`, `runCommand`, `undo`, `redo`, `save`, `search`, `getTextAt`). If MuPDF disappoints, we replace this folder, not the app.
+- **Platform adapter** (`src/platform/`): the _only_ code that imports `@tauri-apps/*`. Exposes `openFileDialog`, `readFile`, `saveAtomic`, `onFileOpened`. Swapping to Electron = rewriting this folder.
 - **Coordinates** (`src/lib/coords.ts`): the only place that converts between PDF space and screen space, handling zoom, DPR, page rotation and cropbox offset. Fully unit-tested.
 
 ### Folder structure
@@ -440,9 +440,9 @@ flowchart LR
 
 ### Phase 0 — Foundations and spikes (do these before any real feature)
 
-- **🔬 Spike 1 — Engine in a worker inside Tauri.** Load MuPDF.js in a module worker in a Tauri build (not just `vite dev`), open a 300-page PDF, render page 1, measure open time / render time / memory. *Proves the core bet.*
-- **🔬 Spike 2 — Custom-font FreeText.** Create a FreeText annotation whose appearance uses an embedded Noto font with "₹ 1,250" and a Hindi word; check it in Edge, Chrome and Acrobat Reader. *Decides how text boxes work.*
-- **🔬 Spike 3 — Journal.** Add an annotation, delete a page, undo both, redo both, save, reopen. *Proves undo design.*
+- **🔬 Spike 1 — Engine in a worker inside Tauri.** Load MuPDF.js in a module worker in a Tauri build (not just `vite dev`), open a 300-page PDF, render page 1, measure open time / render time / memory. _Proves the core bet._
+- **🔬 Spike 2 — Custom-font FreeText.** Create a FreeText annotation whose appearance uses an embedded Noto font with "₹ 1,250" and a Hindi word; check it in Edge, Chrome and Acrobat Reader. _Decides how text boxes work._
+- **🔬 Spike 3 — Journal.** Add an annotation, delete a page, undo both, redo both, save, reopen. _Proves undo design._
 - Project scaffold: Tauri 2 + React + TS + Vite, lint/format, Vitest, the layer folders, `coords.ts` with tests.
 
 ### Phase 1 — Viewer + core editing (MVP)
@@ -461,13 +461,13 @@ OCR with invisible text layer · Edit existing text · Tiled rendering at high z
 
 ## 17. Risks and open questions
 
-| Risk | Impact | Mitigation |
-|------|--------|-----------|
-| MuPDF.js API gaps in WASM (methods that are "mutool only") | Some features need workarounds | Spikes first; engine adapter isolates fixes |
-| Custom-font text box appearances (esp. Devanagari shaping) | Text boxes limited to Latin initially | Spike 2; fallback plan in §10 |
-| Large documents and memory in the webview | Slow/crashy on huge scans | Virtualisation, LRU budget, `ImageBitmap.close()`, tiling in Phase 3 |
-| OneDrive file locks during save | Save fails | Retry + clear error; test PDFs outside OneDrive |
-| Scope creep | Never finishes | Phase gates: a phase isn't done until it works end-to-end and is used daily for a week |
+| Risk                                                       | Impact                                | Mitigation                                                                             |
+| ---------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------- |
+| MuPDF.js API gaps in WASM (methods that are "mutool only") | Some features need workarounds        | Spikes first; engine adapter isolates fixes                                            |
+| Custom-font text box appearances (esp. Devanagari shaping) | Text boxes limited to Latin initially | Spike 2; fallback plan in §10                                                          |
+| Large documents and memory in the webview                  | Slow/crashy on huge scans             | Virtualisation, LRU budget, `ImageBitmap.close()`, tiling in Phase 3                   |
+| OneDrive file locks during save                            | Save fails                            | Retry + clear error; test PDFs outside OneDrive                                        |
+| Scope creep                                                | Never finishes                        | Phase gates: a phase isn't done until it works end-to-end and is used daily for a week |
 
 **Your decisions still open** (none block Phase 0):
 
