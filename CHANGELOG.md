@@ -4,6 +4,20 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.14-pre-alpha]
+
+### Added
+
+- **Annotations engine** (`src/engine/mupdf/annotations.ts`, ADR 0007). Everything added is a real PDF annotation, editable later here and in other viewers:
+  - highlight, underline, strikethrough (from a text selection), freehand ink, rectangle, ellipse, line, arrow, sticky note, text box, image, signature (ink or image), cover (whiteout), redaction mark;
+  - move (vector shapes are moved point by point), resize (drawings are scaled), restyle (colour, fill, width, opacity, text-box text, size and font), delete.
+- Stable annotation identity through `/NM`: existing unnamed annotations are named deterministically on open, so commands replay correctly when saving.
+- `applyRedactions`: removes text, image pixels and covered drawings under every mark, and draws black boxes. `flatten`: merges annotations and form fields into the pages.
+- **Form filling**: list fields (text, checkbox, radio, choice; read-only and multi-line flags) and set their values.
+- `getSelectionQuads` for drag-to-select text markup.
+- Text edits accept a `style` (size, colour, bold, italic, family). Restyled lines skip the original font.
+- 21 annotation and form tests, including cover-only vs real removal, ids across save and replay, and undo. 2 restyling tests. A reportlab-generated form fixture.
+
 ## [1.0.13-pre-alpha]
 
 ### Added

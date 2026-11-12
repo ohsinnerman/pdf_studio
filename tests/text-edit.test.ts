@@ -316,3 +316,29 @@ describe('tables', () => {
     expect(texts(id)).toEqual(['Item description', 'Qty 5']);
   });
 });
+
+describe('restyling an edited line', () => {
+  it('changes size, colour, weight and slant, keeping the baseline', () => {
+    const id = open(makeTextPdf());
+    const line = engine.getTextLines(id, 0)[0]!;
+    engine.run(id, {
+      type: 'replaceText',
+      page: 0,
+      line,
+      text: 'Bigger, blue, bold italic',
+      style: { size: 16, color: [0, 0, 1], bold: true, italic: true },
+    });
+    const edited = engine.getTextLines(id, 0).find((l) => l.text === 'Bigger, blue, bold italic')!;
+    expect(edited.size).toBeCloseTo(16);
+    expect(edited.color[2]).toBeCloseTo(1, 1);
+    expect(edited.font).toMatchObject({ bold: true, italic: true, family: 'serif' });
+    expect(edited.origin[1]).toBeCloseTo(line.origin[1], 1);
+  });
+
+  it('switches family', () => {
+    const id = open(makeTextPdf());
+    const line = engine.getTextLines(id, 0)[0]!;
+    engine.run(id, { type: 'replaceText', page: 0, line, text: 'Now in sans', style: { family: 'sans' } });
+    expect(engine.getTextLines(id, 0).find((l) => l.text === 'Now in sans')!.font.family).toBe('sans');
+  });
+});

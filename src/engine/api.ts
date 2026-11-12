@@ -38,6 +38,124 @@ export interface DocumentInfo {
 
 export type FontFamily = 'sans' | 'serif' | 'mono';
 
+// ---------- Geometry (page space: points, top-left origin, y down) ----------
+
+export type Point = readonly [number, number];
+/** [x0, y0, x1, y1] */
+export type Rect = readonly [number, number, number, number];
+/** Four corners [ulx, uly, urx, ury, llx, lly, lrx, lry], as in PDF QuadPoints. */
+export type Quad = readonly [number, number, number, number, number, number, number, number];
+/** 0..1 */
+export type RGB = readonly [number, number, number];
+
+// ---------- Annotations (ADR 0007) ----------
+
+export type AnnotationKind =
+  | 'highlight'
+  | 'underline'
+  | 'strikeout'
+  | 'ink'
+  | 'rectangle'
+  | 'ellipse'
+  | 'line'
+  | 'arrow'
+  | 'note'
+  | 'textbox'
+  | 'image'
+  | 'signature'
+  | 'whiteout'
+  | 'redaction'
+  /** Made by another app and not one we know how to edit (it can still be deleted). */
+  | 'other';
+
+export interface AnnotationInfo {
+  /** The annotation's /NM, stable across save-by-replay. */
+  readonly id: string;
+  readonly kind: AnnotationKind;
+  readonly rect: Rect;
+  /** Stroke/text colour, or null for none. */
+  readonly color: RGB | null;
+  readonly fill: RGB | null;
+  readonly width: number;
+  readonly opacity: number;
+  readonly contents: string;
+  /** Text boxes only. */
+  readonly fontSize: number | null;
+  readonly font: FontFamily | null;
+  readonly movable: boolean;
+  readonly resizable: boolean;
+}
+
+export type NewAnnotation =
+  | {
+      readonly kind: 'highlight' | 'underline' | 'strikeout';
+      readonly quads: readonly Quad[];
+      readonly color: RGB;
+      readonly opacity?: number;
+    }
+  | {
+      readonly kind: 'ink' | 'signature-ink';
+      readonly strokes: readonly (readonly Point[])[];
+      readonly color: RGB;
+      readonly width: number;
+      readonly opacity?: number;
+    }
+  | {
+      readonly kind: 'rectangle' | 'ellipse';
+      readonly rect: Rect;
+      readonly color: RGB;
+      readonly fill: RGB | null;
+      readonly width: number;
+    }
+  | { readonly kind: 'whiteout' | 'redaction'; readonly rect: Rect }
+  | {
+      readonly kind: 'line' | 'arrow';
+      readonly a: Point;
+      readonly b: Point;
+      readonly color: RGB;
+      readonly width: number;
+    }
+  | { readonly kind: 'note'; readonly at: Point; readonly contents: string; readonly color: RGB }
+  | {
+      readonly kind: 'textbox';
+      readonly rect: Rect;
+      readonly contents: string;
+      readonly color: RGB;
+      readonly fontSize: number;
+      readonly font: FontFamily;
+    }
+  | { readonly kind: 'image' | 'signature-image'; readonly rect: Rect; readonly bytes: Uint8Array };
+
+export interface AnnotationChanges {
+  /** New bounds: moves and/or resizes (vector shapes are scaled to fit). */
+  readonly rect?: Rect;
+  readonly color?: RGB;
+  readonly fill?: RGB | null;
+  readonly width?: number;
+  readonly opacity?: number;
+  readonly contents?: string;
+  readonly fontSize?: number;
+  readonly font?: FontFamily;
+}
+
+// ---------- Form fields ----------
+
+export interface FieldInfo {
+  /** "w" + the widget's object number. */
+  readonly id: string;
+  readonly kind: 'text' | 'checkbox' | 'radio' | 'choice' | 'button' | 'signature';
+  readonly name: string;
+  readonly label: string;
+  readonly value: string;
+  readonly checked: boolean;
+  readonly rect: Rect;
+  readonly options: readonly string[];
+  readonly readOnly: boolean;
+  readonly multiline: boolean;
+  /** 0 = no limit. */
+  readonly maxLength: number;
+}
+
 export interface FontStyle {
   /** The PDF's font name without the subset prefix, e.g. "TimesNewRomanPS-BoldMT". */
   readonly name: string;
@@ -97,13 +215,53 @@ export type Command =
    * `text` deletes the line. See src/engine/mupdf/text.ts.
    */
   | {
+      readonly type: 'addAnnotation';
+      readonly page: number;
+      readonly id: string;
+      readonly annotation: NewAnnotation;
+    }
+  | {
+      readonly type: 'updateAnnotation';
+      readonly page: number;
+      readonly id: string;
+      readonly changes: AnnotationChanges;
+    }
+  | {
+      readonly type: 'moveAnnotation';
+      readonly page: number;
+      readonly id: string;
+      readonly dx: number;
+      readonly dy: number;
+    }
+  | { readonly type: 'deleteAnnotation'; readonly page: number; readonly id: string }
+  /** Removes the content under every redaction box in the document, for real. */
+  | { readonly type: 'applyRedactions' }
+  /** Merges all annotations and form fields into the page content (no longer editable). */
+  | { readonly type: 'flatten' }
+  | {
+      readonly type: 'setFieldValue';
+      readonly page: number;
+      readonly id: string;
+      readonly value: string | boolean;
+    }
+  | {
       readonly type: 'replaceText';
       readonly page: number;
       readonly line: Pick<TextLine, 'bbox' | 'origin' | 'size' | 'color'> & {
         readonly font: Pick<FontStyle, 'family' | 'bold' | 'italic'>;
       };
       readonly text: string;
+      /** Optional new look for the line; anything left out keeps the original. */
+      readonly style?: TextStyle;
     };
+
+export interface TextStyle {
+  readonly size?: number;
+  readonly color?: RGB;
+  readonly bold?: boolean;
+  readonly italic?: boolean;
+  readonly family?: FontFamily;
+}
 
 export interface RenderResult {
   /** Bitmap size in device pixels. */
@@ -151,6 +309,12 @@ export interface EngineApi {
   authenticate(id: DocumentId, password: string): Promise<DocumentInfo>;
   close(id: DocumentId): Promise<void>;
   getInfo(id: DocumentId): Promise<DocumentInfo>;
+  /** Annotations on a page (not form fields or links). */
+  getAnnotations(id: DocumentId, pageIndex: number): Promise<AnnotationInfo[]>;
+  /** Form fields on a page. */
+  getFields(id: DocumentId, pageIndex: number): Promise<FieldInfo[]>;
+  /** Quads covering the text between two points, as a drag-selection would. */
+  getSelectionQuads(id: DocumentId, pageIndex: number, a: Point, b: Point): Promise<Quad[]>;
   /** Lines of existing text on a page, for the Edit text tool. */
   getTextLines(id: DocumentId, pageIndex: number): Promise<TextLine[]>;
   /** `scale` is device pixels per point (see `renderScale` in lib/coords.ts). */
@@ -183,5 +347,39 @@ export function commandLabel(command: Command): string {
       return `Insert ${command.name}`;
     case 'replaceText':
       return command.text.trim() === '' ? 'Delete text' : 'Edit text';
+    case 'addAnnotation':
+      return `Add ${ANNOTATION_NAMES[command.annotation.kind]}`;
+    case 'updateAnnotation':
+      return command.changes.rect && Object.keys(command.changes).length === 1
+        ? 'Resize'
+        : 'Change annotation';
+    case 'moveAnnotation':
+      return 'Move';
+    case 'deleteAnnotation':
+      return 'Delete annotation';
+    case 'applyRedactions':
+      return 'Apply redactions';
+    case 'flatten':
+      return 'Flatten';
+    case 'setFieldValue':
+      return 'Fill in field';
   }
 }
+
+const ANNOTATION_NAMES: Record<NewAnnotation['kind'], string> = {
+  highlight: 'highlight',
+  underline: 'underline',
+  strikeout: 'strikethrough',
+  ink: 'drawing',
+  'signature-ink': 'signature',
+  'signature-image': 'signature',
+  rectangle: 'rectangle',
+  ellipse: 'ellipse',
+  line: 'line',
+  arrow: 'arrow',
+  note: 'note',
+  textbox: 'text box',
+  image: 'image',
+  whiteout: 'whiteout',
+  redaction: 'redaction mark',
+};

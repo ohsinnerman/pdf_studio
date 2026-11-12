@@ -4,7 +4,14 @@
  * so rendering a heavy page can never freeze the app (docs/ARCHITECTURE.md §5).
  */
 import * as Comlink from 'comlink';
-import { EngineError, type Command, type DocumentId, type EngineApi, type SaveOptions } from './api.ts';
+import {
+  EngineError,
+  type Command,
+  type DocumentId,
+  type EngineApi,
+  type Point,
+  type SaveOptions,
+} from './api.ts';
 import { MupdfEngine } from './mupdf/engine.ts';
 import type { FallbackFonts } from './mupdf/text.ts';
 import { ENGINE_READY } from './ready.ts';
@@ -42,6 +49,10 @@ const api: EngineApi = {
   close: (id: DocumentId) => wrap(() => engine.close(id)),
   getInfo: (id: DocumentId) => wrap(() => engine.getInfo(id)),
   getTextLines: (id: DocumentId, pageIndex: number) => wrap(() => engine.getTextLines(id, pageIndex)),
+  getAnnotations: (id: DocumentId, pageIndex: number) => wrap(() => engine.getAnnotations(id, pageIndex)),
+  getFields: (id: DocumentId, pageIndex: number) => wrap(() => engine.getFields(id, pageIndex)),
+  getSelectionQuads: (id: DocumentId, pageIndex: number, a: Point, b: Point) =>
+    wrap(() => engine.getSelectionQuads(id, pageIndex, a, b)),
   run: (id: DocumentId, command: Command) => wrap(() => engine.run(id, command)),
   undo: (id: DocumentId) => wrap(() => engine.undo(id)),
   redo: (id: DocumentId) => wrap(() => engine.redo(id)),

@@ -11,8 +11,24 @@ import {
   type Rotation,
   type SaveOptions,
   type SaveResult,
+  type AnnotationInfo,
+  type FieldInfo,
+  type Point,
+  type Quad,
   type TextLine,
 } from '../api.ts';
+import {
+  addAnnotation,
+  applyAllRedactions,
+  deleteAnnotation,
+  listAnnotations,
+  listFields,
+  moveAnnotation,
+  normaliseNames,
+  selectionQuads,
+  setFieldValue,
+  updateAnnotation,
+} from './annotations.ts';
 import { readTextLines, replaceText, type FallbackFonts } from './text.ts';
 
 /**
@@ -107,6 +123,29 @@ export class MupdfEngine {
 
   getInfo(id: DocumentId): DocumentInfo {
     return this.info(this.entry(id));
+  }
+
+  getAnnotations(id: DocumentId, pageIndex: number): AnnotationInfo[] {
+    return this.withPage(id, pageIndex, listAnnotations);
+  }
+
+  getFields(id: DocumentId, pageIndex: number): FieldInfo[] {
+    return this.withPage(id, pageIndex, listFields);
+  }
+
+  getSelectionQuads(id: DocumentId, pageIndex: number, a: Point, b: Point): Quad[] {
+    return this.withPage(id, pageIndex, (page) => selectionQuads(page, a, b));
+  }
+
+  private withPage<T>(id: DocumentId, pageIndex: number, fn: (page: mupdf.PDFPage) => T): T {
+    const entry = this.entry(id);
+    this.assertPageIndex(entry, pageIndex);
+    const page = entry.doc.loadPage(pageIndex);
+    try {
+      return fn(page);
+    } finally {
+      page.destroy();
+    }
   }
 
   getTextLines(id: DocumentId, pageIndex: number): TextLine[] {
@@ -227,6 +266,7 @@ export class MupdfEngine {
       copy.destroy();
       throw new EngineError('wrong-password', 'Could not unlock the file to save it');
     }
+    normaliseNames(copy);
     return copy;
   }
 
@@ -272,6 +312,17 @@ export class MupdfEngine {
           throw new EngineError('invalid-command', 'A line cannot contain line breaks');
         return;
       }
+      case 'addAnnotation':
+      case 'updateAnnotation':
+      case 'moveAnnotation':
+      case 'deleteAnnotation':
+      case 'setFieldValue':
+        this.assertPageIndex(entry, command.page);
+        if (!command.id) throw new EngineError('invalid-command', 'Missing id');
+        return;
+      case 'applyRedactions':
+      case 'flatten':
+        return;
       case 'insertBlankPage':
       case 'insertDocument':
         if (!Number.isInteger(command.at) || command.at < 0 || command.at > count) {
@@ -296,6 +347,8 @@ export class MupdfEngine {
   }
 
   private startJournal(entry: OpenDocument): void {
+    // Before the journal starts, so it's not an undoable change; save copies do the same (openOriginal).
+    normaliseNames(entry.doc);
     entry.doc.enableJournal();
     entry.savedPosition = entry.doc.getJournal().position;
   }
@@ -388,6 +441,32 @@ function applyCommand(doc: mupdf.PDFDocument, command: Command, fallback: Fallba
       return [];
     }
 
+    case 'addAnnotation':
+    case 'updateAnnotation':
+    case 'moveAnnotation':
+    case 'deleteAnnotation':
+    case 'setFieldValue': {
+      const page = doc.loadPage(command.page);
+      try {
+        if (command.type === 'addAnnotation') addAnnotation(page, command.id, command.annotation);
+        else if (command.type === 'updateAnnotation') updateAnnotation(page, command.id, command.changes);
+        else if (command.type === 'moveAnnotation') moveAnnotation(page, command.id, command.dx, command.dy);
+        else if (command.type === 'deleteAnnotation') deleteAnnotation(page, command.id);
+        else setFieldValue(page, command.id, command.value);
+      } finally {
+        page.destroy();
+      }
+      return [doc.findPage(command.page).asIndirect()];
+    }
+
+    case 'applyRedactions':
+      return applyAllRedactions(doc);
+
+    case 'flatten': {
+      doc.bake(true, true);
+      return Array.from({ length: doc.countPages() }, (_, i) => doc.findPage(i).asIndirect());
+    }
+
     case 'replaceText': {
       replaceText(doc, command.page, command, fallback);
       return [doc.findPage(command.page).asIndirect()];
@@ -410,6 +489,11 @@ function applyCommand(doc: mupdf.PDFDocument, command: Command, fallback: Fallba
         try {
           const n = source.countPages();
           for (let i = 0; i < n; i++) map.graftPage(command.at + i, source, i);
+          // Annotations on inserted pages need stable names too.
+          normaliseNames(
+            doc,
+            Array.from({ length: n }, (_, i) => command.at + i),
+          );
         } finally {
           map.destroy();
         }

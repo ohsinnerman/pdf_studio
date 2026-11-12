@@ -1,5 +1,5 @@
 import * as mupdf from 'mupdf';
-import { EngineError, type FontFamily, type FontStyle, type TextLine } from '../api.ts';
+import { EngineError, type FontFamily, type FontStyle, type TextLine, type TextStyle } from '../api.ts';
 
 /**
  * Editing existing text (docs/ARCHITECTURE.md §12, ADRs 0005 and 0006).
@@ -202,6 +202,20 @@ export interface Run {
   readonly text: string;
 }
 
+/** The look the new text is drawn with: the original line's, with any overrides. */
+function drawStyle(input: ReplaceTextInput) {
+  const { line, style = {} } = input;
+  return {
+    size: style.size ?? line.size,
+    color: style.color ?? line.color,
+    font: {
+      family: style.family ?? line.font.family,
+      bold: style.bold ?? line.font.bold,
+      italic: style.italic ?? line.font.italic,
+    },
+  };
+}
+
 /**
  * Splits `text` into runs, each drawn with the first font in `chain` that has
  * all its glyphs. Whitespace stays in the current run when that font has it.
@@ -248,6 +262,7 @@ export interface ReplaceTextInput {
     readonly font: Pick<FontStyle, 'family' | 'bold' | 'italic'>;
   };
   readonly text: string;
+  readonly style?: TextStyle;
 }
 
 /**
@@ -320,7 +335,13 @@ export function replaceText(
     // Plan the fonts BEFORE touching the page, so a refusal changes nothing.
     const chain: mupdf.Font[] = [];
     const refs = new Map<mupdf.Font, mupdf.PDFObject>();
-    const original = originalFont(page, input.line.origin);
+    const look = drawStyle(input);
+    const restyled =
+      look.font.family !== input.line.font.family ||
+      look.font.bold !== input.line.font.bold ||
+      look.font.italic !== input.line.font.italic;
+    // A changed weight, slant or family can't come from the original font.
+    const original = restyled ? null : originalFont(page, input.line.origin);
     if (original) {
       // Re-embedding can fail for unusual fonts (e.g. Type 3); then the standard font takes over.
       try {
@@ -330,10 +351,10 @@ export function replaceText(
         /* fall through to the standard font */
       }
     }
-    const standard = substituteFontName(input.line.font);
+    const standard = substituteFontName(look.font);
     chain.push(cachedFont(standard, () => new mupdf.Font(standard)));
     if (fallback) {
-      const bold = input.line.font.bold;
+      const bold = look.font.bold;
       chain.push(
         cachedFont(
           bold ? 'fallback-bold' : 'fallback',
@@ -355,7 +376,7 @@ export function replaceText(
 
     // 2. Draw the new text (an empty string just deletes the line).
     if (runs.length > 0) {
-      drawRuns(doc, page, runs, input.line, refs);
+      drawRuns(doc, page, runs, { origin: input.line.origin, size: look.size, color: look.color }, refs);
       // 3. Read it back. If the text layer doesn't say what was typed (a font whose
       //    character map we misjudged), refuse: the caller abandons the whole operation.
       if (!textLayerHas(doc, pageIndex, input.line.origin, input.text)) {
@@ -374,7 +395,11 @@ function drawRuns(
   doc: mupdf.PDFDocument,
   page: mupdf.PDFPage,
   runs: readonly Run[],
-  line: ReplaceTextInput['line'],
+  line: {
+    readonly origin: readonly [number, number];
+    readonly size: number;
+    readonly color: readonly [number, number, number];
+  },
   refs: Map<mupdf.Font, mupdf.PDFObject>,
 ) {
   const pageObj = page.getObject();
