@@ -76,3 +76,8 @@
   border-radius: var(--radius-xs);
   background: var(--canvas);
 }
+
+.chip[data-problem] {
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--hairline));
+  color: var(--danger);
+}

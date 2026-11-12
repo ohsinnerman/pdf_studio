@@ -4,6 +4,14 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.13-pre-alpha]
+
+### Added
+
+- The Edit text chip shows, live as you type, which font the edit will use: "LiberationSerif (original font)", "LiberationSerif, Times for "Q"", "· Noto Sans for "₹"", or "Times (closest match)". It mirrors the engine's font chain (`planFonts`).
+- It warns before you press Enter when an edit will be refused (e.g. Hindi, which needs text shaping), shown in the danger colour.
+- `planFonts` tests (5). 100 tests in total.
+
 ## [1.0.12-pre-alpha]
 
 ### Added

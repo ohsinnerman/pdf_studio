@@ -3,7 +3,7 @@ import type { PageInfo, TextLine } from '../../engine/api.ts';
 import { cssScale } from '../../lib/coords.ts';
 import { cancelTextEdit, commitTextEdit, startTextEdit } from '../../state/actions.ts';
 import { useApp } from '../../state/store.ts';
-import { cssFont, measureText, rgbCss, substituteLabel } from './fonts.ts';
+import { cssFont, measureText, planFonts, rgbCss } from './fonts.ts';
 import styles from './TextLayer.module.css';
 import { useTextLines } from './useTextLines.ts';
 
@@ -59,6 +59,7 @@ function LineEditor({ line, zoom }: { readonly line: TextLine; readonly zoom: nu
   const font = cssFont(line.font, fontPx);
   // Grow with the text, never narrower than the original line.
   const width = Math.max((x1 - x0) * s, measureText(text, font) + fontPx * 0.5);
+  const plan = planFonts(line, text);
 
   useEffect(() => {
     const input = inputRef.current;
@@ -93,11 +94,8 @@ function LineEditor({ line, zoom }: { readonly line: TextLine; readonly zoom: nu
         }}
         onBlur={() => void commit()}
       />
-      <p
-        className={styles.chip}
-        title="The original font can't be reused yet, so the edited line uses the closest standard font."
-      >
-        {substituteLabel(line.font)} · <span className="num">{Math.round(line.size * 10) / 10}</span> pt ·{' '}
+      <p className={styles.chip} data-problem={plan.problem ? true : undefined} role="status">
+        {plan.problem ?? plan.label} · <span className="num">{Math.round(line.size * 10) / 10}</span> pt ·{' '}
         <kbd>Enter</kbd> to apply · <kbd>Esc</kbd> to cancel
       </p>
     </div>
