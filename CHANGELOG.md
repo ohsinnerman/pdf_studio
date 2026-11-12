@@ -4,6 +4,23 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.11-pre-alpha]
+
+### Added
+
+- **Edit text** tool (toolbar, or press `E`; `Esc` leaves it):
+  - Every line of existing text gets a dashed outline on hover. Rotated or vertical lines show a "can't be edited yet" cursor and tooltip.
+  - Click a line to edit it in place. The editor covers the original line, using the same size and colour and a font with the substitute font's metrics, and it grows as you type.
+  - A chip under the line shows the font the edit will use ("Times Bold · 12 pt") and the keys: `Enter` applies, `Esc` cancels, clicking away applies.
+  - If the edit is refused (a character the font can't show), the message names the character and the editor stays open so you can fix it.
+  - Each edit is one undo step ("Undo edit text"). Clearing a line deletes it ("Undo delete text").
+  - App shortcuts are paused while typing in the editor.
+- Font helper tests (3).
+
+### Changed
+
+- README, ARCHITECTURE (Phase 3 progress) and DEVELOPMENT (test map) describe text editing.
+
 ## [1.0.10-pre-alpha]
 
 ### Added

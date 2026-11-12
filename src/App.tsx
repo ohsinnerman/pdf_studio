@@ -1,4 +1,14 @@
-import { FolderOpen, MoveHorizontal, Redo2, Save, SaveAll, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
+import {
+  FolderOpen,
+  MoveHorizontal,
+  Redo2,
+  Save,
+  SaveAll,
+  TextCursorInput,
+  Undo2,
+  ZoomIn,
+  ZoomOut,
+} from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { platform } from './platform/index.ts';
 import { AppMark } from './components/AppMark.tsx';
@@ -22,6 +32,8 @@ import {
   save,
   saveAs,
   selectAllPages,
+  setTool,
+  toggleEditText,
   undo,
   windowTitle,
   zoomIn,
@@ -37,6 +49,7 @@ export function App() {
   const fit = useApp((s) => s.fit);
   const busy = useApp((s) => s.busy);
   const passwordPrompt = useApp((s) => s.passwordPrompt);
+  const tool = useApp((s) => s.tool);
   const dpr = useDevicePixelRatio();
   const title = windowTitle(doc);
 
@@ -61,6 +74,8 @@ export function App() {
       'Ctrl+[': () => void rotateTargets(270),
       'Ctrl+]': () => void rotateTargets(90),
       Delete: () => void deleteTargets(),
+      E: () => useApp.getState().doc && toggleEditText(),
+      Escape: () => setTool('view'),
     }),
     [],
   );
@@ -83,6 +98,17 @@ export function App() {
             icon={<FolderOpen />}
             onClick={() => void openFromDialog()}
             disabled={!!busy}
+          />
+        </ToolbarGroup>
+        <ToolbarDivider />
+        <ToolbarGroup label="Tools">
+          <IconButton
+            label="Edit text"
+            shortcut="E"
+            icon={<TextCursorInput />}
+            onClick={toggleEditText}
+            pressed={tool === 'editText'}
+            disabled={!doc}
           />
         </ToolbarGroup>
         <ToolbarSpacer />

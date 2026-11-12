@@ -1,0 +1,78 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  cursor: default;
+}
+
+.line {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  cursor: not-allowed;
+  transition: background-color var(--m-hover-out) var(--ease);
+}
+
+.line[data-editable] {
+  cursor: text;
+}
+
+.line[data-editable]:hover,
+.line[data-editable]:focus-visible {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  outline: 1px dashed var(--accent);
+  outline-offset: 1px;
+  transition-duration: var(--m-hover-in);
+}
+
+.editor {
+  position: absolute;
+  z-index: 2;
+}
+
+.input {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  /* Covers the original glyphs while editing: it's the paper, not the UI. */
+  background: var(--paper);
+  box-shadow:
+    0 0 0 2px var(--paper),
+    0 0 0 4px var(--accent);
+  border-radius: 1px;
+  line-height: 1;
+  white-space: pre;
+}
+
+.input:focus,
+.input:focus-visible {
+  outline: none;
+}
+
+.chip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: -4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--lift-shadow);
+  color: var(--body);
+  font: var(--text-caption);
+  white-space: nowrap;
+}
+
+.chip kbd {
+  font: var(--text-mono);
+  font-size: 10.5px;
+  padding: 0 4px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-xs);
+  background: var(--canvas);
+}

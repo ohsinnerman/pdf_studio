@@ -1,9 +1,9 @@
-import type { Command, DocumentInfo } from '../engine/api.ts';
+import type { Command, DocumentInfo, TextLine } from '../engine/api.ts';
 import { getEngine } from '../engine/client.ts';
 import { platform, type OpenedFile, type SaveTarget } from '../platform/index.ts';
 import { renderer } from '../render/index.ts';
 import { keysToOrder, isIdentity, nextSelection, reorderForDrop } from '../features/thumbnails/reorder.ts';
-import { clampZoom, stepZoom, useApp, type Notice } from './store.ts';
+import { clampZoom, stepZoom, useApp, type Notice, type Tool } from './store.ts';
 
 /**
  * Everything that changes app state goes through these functions, so components
@@ -111,6 +111,8 @@ function showDocument(info: DocumentInfo, name: string, path: string | null) {
     scrollTarget: null,
     selection: [],
     selectionAnchor: null,
+    tool: 'view',
+    textEdit: null,
   });
   if (info.wasRepaired)
     notify('info', `${name} was damaged and has been repaired. Saving will write a fixed copy.`);
@@ -346,4 +348,51 @@ export function installCloseGuard(): () => void {
     hasUnsavedChanges: () => !!get().doc?.info.dirty,
     confirmDiscard: () => confirmDiscardChanges(),
   });
+}
+
+// ---------- Edit text ----------
+
+export function setTool(tool: Tool): void {
+  set({ tool, textEdit: null });
+}
+
+export const toggleEditText = () => setTool(get().tool === 'editText' ? 'view' : 'editText');
+
+export function startTextEdit(pageIndex: number, line: TextLine): void {
+  const { doc } = get();
+  const page = doc?.info.pages[pageIndex];
+  if (!doc || !page) return;
+  if (!line.editable) {
+    notify('info', "Rotated or vertical text can't be edited yet.");
+    return;
+  }
+  set({ textEdit: { docId: doc.id, pageIndex, pageKey: page.key, revision: page.revision, line } });
+}
+
+export function cancelTextEdit(): void {
+  set({ textEdit: null });
+}
+
+/**
+ * Applies the edit. Returns false (and keeps the editor open) if the engine
+ * refused it, e.g. a character the substitute font can't draw.
+ */
+export async function commitTextEdit(text: string): Promise<boolean> {
+  const edit = get().textEdit;
+  if (!edit) return true;
+  const { doc } = get();
+  const page = doc?.info.pages[edit.pageIndex];
+  // The page moved or changed underneath us (undo, another edit): drop this edit rather than guess.
+  if (!doc || doc.id !== edit.docId || page?.key !== edit.pageKey || page.revision !== edit.revision) {
+    set({ textEdit: null });
+    return true;
+  }
+  if (text === edit.line.text) {
+    set({ textEdit: null });
+    return true;
+  }
+  const ok = await runCommand({ type: 'replaceText', page: edit.pageIndex, line: edit.line, text });
+  // Only close this editor: the user may already have clicked another line.
+  if (ok && get().textEdit === edit) set({ textEdit: null });
+  return ok;
 }

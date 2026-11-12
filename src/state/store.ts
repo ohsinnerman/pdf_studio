@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { DocumentInfo } from '../engine/api.ts';
+import type { DocumentInfo, TextLine } from '../engine/api.ts';
 
 /**
  * App state (docs/ARCHITECTURE.md §8). The engine worker owns the PDF; this
@@ -28,6 +28,18 @@ export interface PasswordPrompt {
   readonly error: string | null;
 }
 
+/** What a click on a page does. */
+export type Tool = 'view' | 'editText';
+
+/** The line being edited with the Edit text tool. */
+export interface TextEdit {
+  readonly docId: string;
+  readonly pageIndex: number;
+  readonly pageKey: number;
+  readonly revision: number;
+  readonly line: TextLine;
+}
+
 export const ZOOM_STEPS = [
   0.25, 0.33, 0.5, 0.67, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5,
 ] as const;
@@ -43,6 +55,8 @@ export interface AppState {
   readonly currentPage: number;
   /** A request for the viewer to scroll; the nonce makes repeated requests for one page work. */
   readonly scrollTarget: { readonly index: number; readonly nonce: number } | null;
+  readonly tool: Tool;
+  readonly textEdit: TextEdit | null;
   /** Selected pages, as page keys in document order. Empty = actions use the current page. */
   readonly selection: readonly number[];
   /** Where a Shift-click range starts. */
@@ -59,6 +73,8 @@ export const useApp = create<AppState>(() => ({
   fit: 'width',
   currentPage: 0,
   scrollTarget: null,
+  tool: 'view',
+  textEdit: null,
   selection: [],
   selectionAnchor: null,
   busy: null,
