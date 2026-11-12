@@ -1,7 +1,7 @@
 {
   "name": "pdf-studio",
   "private": true,
-  "version": "1.0.8-pre-alpha",
+  "version": "1.0.9-pre-alpha",
   "description": "A free, offline desktop PDF editor for Windows.",
   "license": "AGPL-3.0-or-later",
   "author": "Akul Shrivastava",

@@ -1,6 +1,14 @@
 # PDF Studio — Architecture
 
-> Status: **proposed** (v1, 12 Nov 2026). Every decision below lists the options considered, what I recommend, and why. Anything marked **🔬 Spike** must be proven with a small throwaway prototype before we build on it.
+> Status: **accepted, in implementation** (written 12 Nov 2026; updated for 1.0.9-pre-alpha). Every decision below lists the options considered, what was chosen, and why. Anything marked **🔬 Spike** must be proven with a small throwaway prototype before we build on it.
+>
+> **What building it taught us.** These amendments are already in the code. Each has an ADR in [`decisions/`](decisions/README.md).
+>
+> 1. **Three coordinate spaces, not two.** MuPDF already gives page geometry in a top-left, y-down space with rotation applied ("page space"). Raw PDF user space only appears when touching PDF objects. See `src/lib/coords.ts`.
+> 2. **Save by replay** ([ADR 0004](decisions/0004-save-by-replay.md)). Spike 3 found that MuPDF's journal can't undo past a save of the live document. The live document is never saved; saving replays the command history onto a fresh copy of the original file.
+> 3. **Saving is two steps:** produce the bytes, then mark the document clean only after the write succeeds. A cancelled dialog or failed write never hides unsaved changes.
+> 4. **The engine worker announces when it's ready.** MuPDF loads its WASM with a top-level `await`, and messages sent to a worker before it listens are dropped. The client waits for a ready message before calling it.
+> 5. **Thumbnails aren't virtualised yet**, only lazily rendered (IntersectionObserver), because dnd-kit sorting and virtualisation don't mix easily. Revisit for 1,000+ page files.
 
 ---
 
@@ -440,12 +448,16 @@ flowchart LR
 
 ### Phase 0 — Foundations and spikes (do these before any real feature)
 
+**Progress (1.0.9-pre-alpha):** ✅ scaffold · ✅ Spike 3 (done, and it found the save problem behind ADR 0004) · 🟡 Spike 1: the engine worker and WASM run under the production CSP in Chromium (WebView2's engine), and the release binary starts on Linux; the first run inside WebView2 on Windows is the CI installer on your PC · ⬜ Spike 2.
+
 - **🔬 Spike 1 — Engine in a worker inside Tauri.** Load MuPDF.js in a module worker in a Tauri build (not just `vite dev`), open a 300-page PDF, render page 1, measure open time / render time / memory. _Proves the core bet._
 - **🔬 Spike 2 — Custom-font FreeText.** Create a FreeText annotation whose appearance uses an embedded Noto font with "₹ 1,250" and a Hindi word; check it in Edge, Chrome and Acrobat Reader. _Decides how text boxes work._
 - **🔬 Spike 3 — Journal.** Add an annotation, delete a page, undo both, redo both, save, reopen. _Proves undo design._
 - Project scaffold: Tauri 2 + React + TS + Vite, lint/format, Vitest, the layer folders, `coords.ts` with tests.
 
 ### Phase 1 — Viewer + core editing (MVP)
+
+**Done in 1.0.5–1.0.7:** open (dialog / drag-drop), virtualised scrolling, zoom, thumbnails, rotate / delete / reorder / insert blank / merge, undo/redo, atomic save, save as, dirty tracking. **Still to do:** Explorer "Open with", tabs, text selection and search, extract pages, all annotations, crash recovery.
 
 Open (dialog / drag-drop / Explorer), tabs for multiple docs, virtualised scrolling, zoom, thumbnails, text selection & copy, search · Page ops: rotate, delete, reorder, insert blank, merge another PDF, extract pages · Annotations: highlight/underline/strike, ink, rectangle/ellipse/line/arrow, sticky note, text box, image · Select/move/resize/delete annotations · Undo/redo · Atomic save, save as, dirty tracking, crash recovery.
 

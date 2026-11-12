@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/ohsinnerman/pdf_studio/actions/workflows/ci.yml"><img src="https://github.com/ohsinnerman/pdf_studio/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+</p>
+
+<p align="center">
   <b>Status: pre-alpha</b> — usable for experiments, not yet for important documents.
 </p>
 
@@ -20,17 +24,23 @@ Editing a PDF usually means paying for Acrobat or uploading a private document t
 
 ## Features
 
-|                                                       | Status            |
-| ----------------------------------------------------- | ----------------- |
-| Open and view PDFs (virtualised, smooth on big files) | in progress       |
-| Page thumbnails, rotate, delete, reorder              | in progress       |
-| Undo / redo for every change                          | in progress       |
-| Safe saving (never corrupts the original)             | in progress       |
-| Highlight, draw, shapes, text boxes, images           | planned (Phase 1) |
-| Forms, signatures, true redaction, compression        | planned (Phase 2) |
-| OCR, editing existing text                            | planned (Phase 3) |
+|                                                                                        | Status            |
+| -------------------------------------------------------------------------------------- | ----------------- |
+| Open PDFs: dialog, Ctrl+O, drag-and-drop, password-protected files                     | ✅                |
+| Smooth viewer for big files: virtualised, sharp on scaled displays, zoom and fit width | ✅                |
+| Page thumbnails: select, drag to reorder                                               | ✅                |
+| Rotate, delete, insert blank page, insert another PDF (merge)                          | ✅                |
+| Undo / redo for every change, even after saving                                        | ✅                |
+| Safe saving: temp file + rename, never corrupts the original                           | ✅                |
+| Highlight, draw, shapes, text boxes, images                                            | planned (Phase 1) |
+| Forms, signatures, true redaction, compression                                         | planned (Phase 2) |
+| OCR, editing existing text                                                             | planned (Phase 3) |
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it's built and the [roadmap](docs/ARCHITECTURE.md#16-roadmap-revised).
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it's built, and the [roadmap](docs/ARCHITECTURE.md#16-roadmap-revised).
+
+## Download
+
+Every CI run builds a Windows installer: open the latest green run under **Actions** and download the **Artifacts**. Tagged versions appear under **Releases**. The installer isn't code-signed, so SmartScreen will ask; choose **More info → Run anyway**. Details: [`docs/RELEASING.md`](docs/RELEASING.md).
 
 ## Tech
 
@@ -46,7 +56,7 @@ npm run app:dev     # run the desktop app with hot reload
 npm run app:build   # build the Windows installer (.exe) into src-tauri/target/release/bundle/nsis
 ```
 
-Full setup, scripts and troubleshooting: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+Full setup, scripts and troubleshooting: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). All docs: [`docs/README.md`](docs/README.md). Design system: [`DESIGN.md`](DESIGN.md).
 
 ## Versioning
 

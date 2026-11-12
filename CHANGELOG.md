@@ -4,6 +4,25 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.9-pre-alpha]
+
+### Added
+
+- `docs/DEVELOPMENT.md`: Windows setup (Node, Rust, C++ Build Tools, WebView2), every script, a map of the code, how to make a change, debugging the worker and Rust, troubleshooting.
+- `docs/RELEASING.md`: getting the `.exe` from any CI run, publishing a draft GitHub Release from a tag, what's in the installer, and what's deliberately not done yet (signing, auto-update).
+- Decision records: `docs/decisions/` with an index and ADRs 0001 (Tauri), 0002 (MuPDF.js) and 0003 (live document + journal), alongside 0004 (save by replay).
+- `docs/README.md` (index of all docs), `CONTRIBUTING.md`, and recommended VS Code extensions.
+
+### Changed
+
+- `docs/ARCHITECTURE.md` is now marked accepted and lists what building it taught us: three coordinate spaces, save by replay, two-step saving, the worker ready handshake, and lazily rendered rather than virtualised thumbnails. Roadmap progress is marked.
+- README: feature table reflects what works, a Download section, a CI badge, and links to all docs.
+
+### Verified
+
+- A full release `tauri build` compiles and the app starts (Linux, under Xvfb).
+- Open → edit → save works end to end in Chromium with the app's exact production Content Security Policy, including the worker, WASM, rendering and download.
+
 ## [1.0.8-pre-alpha]
 
 ### Added
