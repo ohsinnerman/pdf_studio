@@ -1,0 +1,11 @@
+# Normalise line endings so Windows checkouts don't produce noisy diffs.
+* text=auto eol=lf
+
+# Binary files: never touch.
+*.pdf binary
+*.png binary
+*.ico binary
+*.icns binary
+*.woff2 binary
+*.ttf binary
+*.otf binary

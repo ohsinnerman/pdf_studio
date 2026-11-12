@@ -1,0 +1,38 @@
+{
+  "name": "pdf-studio",
+  "private": true,
+  "version": "1.0.0-pre-alpha",
+  "description": "A free, offline desktop PDF editor for Windows.",
+  "license": "AGPL-3.0-or-later",
+  "author": "Akul Shrivastava",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ohsinnerman/pdf_studio.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "app:dev": "tauri dev",
+    "app:build": "tauri build",
+    "version:bump": "node scripts/bump-version.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.8"
+  }
+}
