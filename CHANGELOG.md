@@ -4,6 +4,19 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.8-pre-alpha]
+
+### Added
+
+- **CI** (`.github/workflows/ci.yml`), on every push and pull request:
+  - Web checks on Linux: version agreement, typecheck, ESLint, Prettier, tests, frontend build.
+  - Rust checks on Windows: rustfmt, clippy with warnings as errors, Rust tests, with a locked `Cargo.lock`.
+  - When both pass, a real NSIS installer is built on `windows-latest` and uploaded as a workflow artifact (`pdf-studio-<version>-windows-x64`, kept 30 days).
+  - A newer push to the same branch cancels the older run.
+- **Release** (`.github/workflows/release.yml`), on a `v*` tag or by hand: checks that the tag matches the app version and that all version files agree, runs the tests, builds with `tauri-action`, and attaches the `.exe` to a **draft** GitHub Release. Versions with a pre-release tag are marked as pre-releases. The release notes explain the SmartScreen prompt for the unsigned installer.
+- Dependabot: monthly, grouped updates for npm, Cargo and GitHub Actions.
+- Workflows validated with actionlint.
+
 ## [1.0.7-pre-alpha]
 
 ### Added
