@@ -13,7 +13,7 @@ import {
   type SaveResult,
   type TextLine,
 } from '../api.ts';
-import { readTextLines, replaceText } from './text.ts';
+import { readTextLines, replaceText, type FallbackFonts } from './text.ts';
 
 /**
  * MuPDF-backed engine. Synchronous and single-threaded on purpose: it runs
@@ -43,9 +43,19 @@ const FULL_SAVE_OPTIONS = 'garbage=compact,compress=yes';
 
 const normaliseRotation = (deg: number): Rotation => (((deg % 360) + 360) % 360) as Rotation;
 
+export interface EngineOptions {
+  /** Bundled fonts for characters the standard fonts lack (₹…). Without them those edits are refused. */
+  readonly fallbackFonts?: FallbackFonts | null;
+}
+
 export class MupdfEngine {
   private readonly docs = new Map<DocumentId, OpenDocument>();
   private nextId = 1;
+  private readonly fallbackFonts: FallbackFonts | null;
+
+  constructor(options: EngineOptions = {}) {
+    this.fallbackFonts = options.fallbackFonts ?? null;
+  }
 
   open(bytes: Uint8Array, name: string): OpenResult {
     let doc: mupdf.PDFDocument | null;
@@ -137,7 +147,7 @@ export class MupdfEngine {
     const position = doc.getJournal().position;
     doc.beginOperation(commandLabel(command));
     try {
-      const changed = applyCommand(doc, command);
+      const changed = applyCommand(doc, command, this.fallbackFonts);
       doc.endOperation();
       for (const key of changed) this.bump(entry, key);
     } catch (err) {
@@ -181,11 +191,15 @@ export class MupdfEngine {
     const position = entry.doc.getJournal().position;
     const copy = this.openOriginal(entry);
     try {
-      for (const command of entry.history.slice(0, position)) applyCommand(copy, command);
+      const commands = entry.history.slice(0, position);
+      for (const command of commands) applyCommand(copy, command, this.fallbackFonts);
       if (copy.countPages() !== entry.doc.countPages()) {
         throw new EngineError('internal', 'Save replay diverged from the open document');
       }
       const incremental = options.incremental && copy.canBeSavedIncrementally();
+      // Text edits embed whole fonts (Noto Sans alone is 600 KB); keep only the glyphs used.
+      // Not for incremental saves, which must leave the original's objects untouched.
+      if (!incremental && commands.some((c) => c.type === 'replaceText')) copy.subsetFonts();
       const buffer = copy.saveToBuffer(incremental ? 'incremental' : FULL_SAVE_OPTIONS);
       try {
         // Copy out of WASM memory: the view is invalid once the buffer is freed.
@@ -344,7 +358,7 @@ export class MupdfEngine {
  * appearance changed. Used both for live edits and for save replay, so it must
  * be deterministic and must not touch anything outside `doc`.
  */
-function applyCommand(doc: mupdf.PDFDocument, command: Command): number[] {
+function applyCommand(doc: mupdf.PDFDocument, command: Command, fallback: FallbackFonts | null): number[] {
   switch (command.type) {
     case 'rotatePages': {
       const changed: number[] = [];
@@ -375,7 +389,7 @@ function applyCommand(doc: mupdf.PDFDocument, command: Command): number[] {
     }
 
     case 'replaceText': {
-      replaceText(doc, command.page, command);
+      replaceText(doc, command.page, command, fallback);
       return [doc.findPage(command.page).asIndirect()];
     }
 

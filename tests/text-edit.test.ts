@@ -28,9 +28,14 @@ function makeTextPdf({ rotate = 0 }: { rotate?: 0 | 90 | 180 | 270 } = {}): Uint
   return bytes;
 }
 
+const fallbackFonts = {
+  regular: new Uint8Array(readFileSync(new URL('../src/assets/fonts/NotoSans-Regular.ttf', import.meta.url))),
+  bold: new Uint8Array(readFileSync(new URL('../src/assets/fonts/NotoSans-Bold.ttf', import.meta.url))),
+};
+
 let engine: MupdfEngine;
 beforeEach(() => {
-  engine = new MupdfEngine();
+  engine = new MupdfEngine({ fallbackFonts });
 });
 
 function open(bytes: Uint8Array) {
@@ -115,18 +120,40 @@ describe('replacing a line', () => {
     expect(texts(id)).toEqual(['First line: "quoted" text.', 'Second line, café au lait.', 'Bold heading']);
   });
 
-  it('refuses characters the substitute font cannot draw, and changes nothing', () => {
+  it('draws ₹ with the bundled fallback font, mid-line', () => {
+    const id = open(makeTextPdf());
+    const first = engine.getTextLines(id, 0)[0]!;
+    engine.run(id, editCommand(first, 'Price: ₹ 1,250'));
+    expect(texts(id)[0]).toBe('Price: ₹ 1,250');
+  });
+
+  it('refuses scripts that need shaping, and changes nothing', () => {
+    const id = open(makeTextPdf());
+    const first = engine.getTextLines(id, 0)[0]!;
+    expect(() => engine.run(id, editCommand(first, 'नमस्ते'))).toThrow(/needs text shaping/);
+    expect(texts(id)[0]).toBe('First line: "quoted" text.');
+    expect(engine.getInfo(id).undoLabel).toBeNull();
+  });
+
+  it('refuses characters no font has, naming them', () => {
     const id = open(makeTextPdf());
     const first = engine.getTextLines(id, 0)[0]!;
     try {
-      engine.run(id, editCommand(first, 'Price: ₹ 1,250'));
+      engine.run(id, editCommand(first, 'Smile 😀'));
       throw new Error('expected an error');
     } catch (err) {
       expect(err).toBeInstanceOf(EngineError);
-      expect((err as EngineError).message).toContain('"₹"');
+      expect((err as EngineError).message).toContain('"😀"');
     }
-    expect(texts(id)[0]).toBe('First line: "quoted" text.');
     expect(engine.getInfo(id).undoLabel).toBeNull();
+  });
+
+  it('without fallback fonts, refuses ₹', () => {
+    const plain = new MupdfEngine();
+    const r = plain.open(makeTextPdf(), 'x.pdf');
+    if (r.status !== 'ok') throw new Error('locked');
+    const first = plain.getTextLines(r.info.id, 0)[0]!;
+    expect(() => plain.run(r.info.id, editCommand(first, '₹ 5'))).toThrow(/"₹"/);
   });
 
   it('rejects line breaks', () => {
@@ -231,5 +258,61 @@ describe('editing a PDF with embedded subset fonts', () => {
     const edited = engine.getTextLines(id, 0).find((l) => l.text.startsWith('Total due'))!;
     expect(edited.text).toBe('Total due: 3,900.00');
     expect(edited.font).toMatchObject({ family: 'serif', bold: true });
+  });
+});
+
+describe('reusing the original font (ADR 0006)', () => {
+  const letter = () =>
+    new Uint8Array(readFileSync(new URL('./fixtures/chromium-letter.pdf', import.meta.url)));
+  const fontOf = (id: string, prefix: string) =>
+    engine.getTextLines(id, 0).find((l) => l.text.startsWith(prefix))!.font.name;
+
+  it('reports which characters the original font has', () => {
+    const id = open(letter());
+    const dear = engine.getTextLines(id, 0).find((l) => l.text.startsWith('Dear'))!;
+    expect(dear.glyphs).toContain('S');
+    expect(dear.glyphs).not.toContain('Z');
+  });
+
+  it('draws in the original font when it has every character', () => {
+    const id = open(letter());
+    const dear = engine.getTextLines(id, 0).find((l) => l.text.startsWith('Dear'))!;
+    engine.run(id, editCommand(dear, 'Dear Ms. Sharma,'));
+    expect(texts(id)).toContain('Dear Ms. Sharma,');
+    expect(fontOf(id, 'Dear')).toMatch(/LiberationSerif/);
+  });
+
+  it('mixes in the standard font only for missing characters', () => {
+    const id = open(letter());
+    const dear = engine.getTextLines(id, 0).find((l) => l.text.startsWith('Dear'))!;
+    expect(dear.glyphs).not.toContain('Q');
+    engine.run(id, editCommand(dear, 'Dear Mr. Quill,'));
+    expect(texts(id)).toContain('Dear Mr. Quill,');
+    // The line starts in the original font; only "Q" comes from Times.
+    expect(fontOf(id, 'Dear')).toMatch(/LiberationSerif/);
+  });
+
+  it('subsets added fonts on save, so a ₹ costs kilobytes, not the whole font', () => {
+    const original = letter();
+    const id = open(original);
+    const total = engine.getTextLines(id, 0).find((l) => l.text.startsWith('Total'))!;
+    engine.run(id, editCommand(total, 'Total due: ₹ 3,900.00'));
+    const saved = engine.save(id).bytes;
+    expect(saved.length).toBeLessThan(original.length + 80_000);
+    expect(texts(open(saved))).toContain('Total due: ₹ 3,900.00');
+  });
+});
+
+describe('tables', () => {
+  it('edits one cell when another cell shares its baseline', () => {
+    const doc = new mupdf.PDFDocument();
+    const f = doc.addSimpleFont(new mupdf.Font('Helvetica'));
+    const contents = 'BT /F1 11 Tf 72 700 Td (Item) Tj ET BT /F1 11 Tf 300 700 Td (Qty 5) Tj ET';
+    doc.insertPage(-1, doc.addPage([0, 0, 595, 842], 0, { Font: { F1: f } }, contents));
+    const buf = doc.saveToBuffer('');
+    const id = open(new Uint8Array(buf.asUint8Array()));
+    const item = engine.getTextLines(id, 0).find((l) => l.text === 'Item')!;
+    engine.run(id, editCommand(item, 'Item description'));
+    expect(texts(id)).toEqual(['Item description', 'Qty 5']);
   });
 });

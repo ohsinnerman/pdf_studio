@@ -4,6 +4,28 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.12-pre-alpha]
+
+### Added
+
+- **Per-character font chain for text edits** (ADR 0006). Each character uses the first font in this order that has it:
+  1. the line's **original** embedded font, so small edits are visually identical;
+  2. the closest **standard** font (metric-compatible with Arial, Times New Roman and Courier New);
+  3. bundled **Noto Sans** (Regular and Bold, OFL) for characters like **₹**.
+- `TextLine.glyphs`: which common characters a line's original font can draw.
+- A read-back safety check: after drawing, the page's text layer must contain the typed text, otherwise the edit is refused and rolled back.
+- Full saves subset the fonts that text edits added: a ₹ edit grows a 29 KB invoice by about 40 KB, not 600 KB.
+- Tests: ₹ mid-line, original-font reuse, mixing in the standard font only where needed, scripts that need shaping refused, characters no font has refused (named), behaviour without fallback fonts, save size, table cells sharing a baseline. 95 tests in total.
+
+### Fixed
+
+- Standard-14 "original" fonts aren't re-embedded. MuPDF merged them with the identical substitute and kept the wrong character map, so curly quotes read back as "ª"/"º".
+
+### Changed
+
+- Hindi and other scripts that need shaping now get a specific message instead of "can't show".
+- README lists text editing as done (the 1.0.11 README update hadn't applied), and credits the bundled fonts and their licence.
+
 ## [1.0.11-pre-alpha]
 
 ### Added

@@ -467,7 +467,7 @@ Fill AcroForm fields · Signatures (draw / type / image, saved locally for reuse
 
 ### Phase 3 — Hard mode
 
-**Started early in 1.0.10–1.0.11:** edit existing text, one line at a time, with standard substitute fonts ([ADR 0005](decisions/0005-edit-text-by-redact-and-redraw.md)). Still to do here: reuse the original font when it has the glyphs, bundled Noto fonts (₹, Devanagari), multi-line paragraphs.
+**Started early in 1.0.10–1.0.11:** edit existing text, one line at a time, with standard substitute fonts ([ADR 0005](decisions/0005-edit-text-by-redact-and-redraw.md)). 1.0.12 added the per-character font chain: original font → standard font → Noto Sans for ₹ ([ADR 0006](decisions/0006-font-chain-for-text-edits.md)). Still to do here: shaping for Indic scripts, multi-line paragraphs.
 
 OCR with invisible text layer · Edit existing text · Tiled rendering at high zoom · Page labels/bookmarks editing · Optional: system fonts.
 

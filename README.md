@@ -24,17 +24,18 @@ Editing a PDF usually means paying for Acrobat or uploading a private document t
 
 ## Features
 
-|                                                                                        | Status            |
-| -------------------------------------------------------------------------------------- | ----------------- |
-| Open PDFs: dialog, Ctrl+O, drag-and-drop, password-protected files                     | ✅                |
-| Smooth viewer for big files: virtualised, sharp on scaled displays, zoom and fit width | ✅                |
-| Page thumbnails: select, drag to reorder                                               | ✅                |
-| Rotate, delete, insert blank page, insert another PDF (merge)                          | ✅                |
-| Undo / redo for every change, even after saving                                        | ✅                |
-| Safe saving: temp file + rename, never corrupts the original                           | ✅                |
-| Highlight, draw, shapes, text boxes, images                                            | planned (Phase 1) |
-| Forms, signatures, true redaction, compression                                         | planned (Phase 2) |
-| OCR, editing existing text                                                             | planned (Phase 3) |
+|                                                                                                    | Status            |
+| -------------------------------------------------------------------------------------------------- | ----------------- |
+| Open PDFs: dialog, Ctrl+O, drag-and-drop, password-protected files                                 | ✅                |
+| Smooth viewer for big files: virtualised, sharp on scaled displays, zoom and fit width             | ✅                |
+| Page thumbnails: select, drag to reorder                                                           | ✅                |
+| Rotate, delete, insert blank page, insert another PDF (merge)                                      | ✅                |
+| **Edit existing text**: click a line, retype it; keeps the original font where it can, ₹ supported | ✅                |
+| Undo / redo for every change, even after saving                                                    | ✅                |
+| Safe saving: temp file + rename, never corrupts the original                                       | ✅                |
+| Highlight, draw, shapes, text boxes, images                                                        | planned (Phase 1) |
+| Forms, signatures, true redaction, compression                                                     | planned (Phase 2) |
+| OCR; Hindi and other Indic scripts in text edits; multi-line paragraphs                            | planned (Phase 3) |
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it's built, and the [roadmap](docs/ARCHITECTURE.md#16-roadmap-revised).
 
@@ -65,3 +66,5 @@ Every commit bumps the patch version while the app is in pre-alpha (`1.0.0-pre-a
 ## Licence
 
 [AGPL-3.0-or-later](LICENSE). PDF Studio uses MuPDF, which is AGPL-licensed, so the app is too. You can use it, change it and share it; if you share a modified version, share its source as well.
+
+Bundled fonts: [Noto Sans](https://notofonts.github.io) and [Geist](https://vercel.com/font), both under the [SIL Open Font License 1.1](src/assets/fonts/OFL.txt).

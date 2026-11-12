@@ -58,6 +58,12 @@ export interface TextLine {
   /** RGB, 0..1 */
   readonly color: readonly [number, number, number];
   readonly font: FontStyle;
+  /**
+   * Characters the line's original font can draw (from a set of common ones).
+   * An edit that only uses these is drawn in the original font and looks identical.
+   * Empty when the font can't be reused.
+   */
+  readonly glyphs: string;
   /** False for rotated or vertical text, which can't be edited yet. */
   readonly editable: boolean;
 }

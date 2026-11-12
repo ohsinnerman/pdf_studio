@@ -9,6 +9,7 @@ Short records of decisions that shaped the code: what we chose, what else we con
 | [0003](0003-live-document-journal.md)          | Edit a live document; undo with MuPDF's journal                 | accepted, amended by 0004 |
 | [0004](0004-save-by-replay.md)                 | Save by replaying commands onto a fresh copy                    | accepted                  |
 | [0005](0005-edit-text-by-redact-and-redraw.md) | Edit existing text by removing a line's glyphs and redrawing it | accepted                  |
+| [0006](0006-font-chain-for-text-edits.md)      | A per-character font chain for text edits                       | accepted                  |
 
 ## Writing a new one
 

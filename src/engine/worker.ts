@@ -6,9 +6,25 @@
 import * as Comlink from 'comlink';
 import { EngineError, type Command, type DocumentId, type EngineApi, type SaveOptions } from './api.ts';
 import { MupdfEngine } from './mupdf/engine.ts';
+import type { FallbackFonts } from './mupdf/text.ts';
 import { ENGINE_READY } from './ready.ts';
 
-const engine = new MupdfEngine();
+/** Bundled Noto Sans, for characters the standard fonts lack (₹…). Optional: edits needing it are refused without it. */
+async function loadFallbackFonts(): Promise<FallbackFonts | null> {
+  try {
+    const load = async (url: URL) => new Uint8Array(await (await fetch(url)).arrayBuffer());
+    const [regular, bold] = await Promise.all([
+      load(new URL('../assets/fonts/NotoSans-Regular.ttf', import.meta.url)),
+      load(new URL('../assets/fonts/NotoSans-Bold.ttf', import.meta.url)),
+    ]);
+    return { regular, bold };
+  } catch (err) {
+    console.error('Could not load fallback fonts', err);
+    return null;
+  }
+}
+
+const engine = new MupdfEngine({ fallbackFonts: await loadFallbackFonts() });
 
 /** Errors lose their class when they cross the worker boundary; keep the code in the message. */
 function wrap<T>(fn: () => T): Promise<T> {
