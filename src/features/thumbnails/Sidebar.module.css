@@ -1,0 +1,103 @@
+.sidebar {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
+  background: var(--canvas);
+  border-right: 1px solid var(--hairline);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--space-3);
+}
+
+.title {
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.actions {
+  display: flex;
+  gap: 2px;
+  padding: 0 var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.list {
+  margin: 0;
+  padding: var(--space-3) 0 var(--space-6);
+  list-style: none;
+  overflow-y: auto;
+}
+
+.item {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-1) 0;
+  touch-action: none;
+}
+
+.item[data-dragging] {
+  position: relative;
+  z-index: 1;
+}
+
+.thumb {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+  transition: background-color var(--m-hover-out) var(--ease);
+}
+
+.thumb:hover {
+  background: var(--hover-tint);
+  transition-duration: var(--m-hover-in);
+}
+
+.paper {
+  position: relative;
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  box-sizing: content-box;
+}
+
+.item[data-dragging] .paper {
+  box-shadow: var(--paper-shadow);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.number {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* Current page: the number reads in ink. Selected: accent ring + soft accent badge. */
+.thumb[aria-current='page'] .number {
+  color: var(--ink);
+}
+
+.thumb[aria-pressed='true'] .paper {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.thumb[aria-pressed='true'] .number {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

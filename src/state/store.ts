@@ -43,6 +43,10 @@ export interface AppState {
   readonly currentPage: number;
   /** A request for the viewer to scroll; the nonce makes repeated requests for one page work. */
   readonly scrollTarget: { readonly index: number; readonly nonce: number } | null;
+  /** Selected pages, as page keys in document order. Empty = actions use the current page. */
+  readonly selection: readonly number[];
+  /** Where a Shift-click range starts. */
+  readonly selectionAnchor: number | null;
   /** Label of a long operation in progress ("Opening…"), or null. */
   readonly busy: string | null;
   readonly notices: readonly Notice[];
@@ -55,6 +59,8 @@ export const useApp = create<AppState>(() => ({
   fit: 'width',
   currentPage: 0,
   scrollTarget: null,
+  selection: [],
+  selectionAnchor: null,
   busy: null,
   notices: [],
   passwordPrompt: null,

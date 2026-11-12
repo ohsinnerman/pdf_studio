@@ -4,6 +4,21 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.6-pre-alpha]
+
+### Added
+
+- Page sidebar with thumbnails. They render lazily, only when scrolled into view and after the main view's pages. The current page's thumbnail follows the main view.
+- Selecting pages works like a file manager: click, Ctrl+click to toggle, Shift+click for a range, Ctrl+A for all. Clicking a thumbnail jumps to that page.
+- Drag-to-reorder thumbnails with dnd-kit, using mouse or keyboard. Dragging one page of a multi-selection moves the whole selection as a block, keeping its order.
+- Page actions for the selection, or the current page when nothing is selected: rotate left or right (Ctrl+[ / Ctrl+]), delete (Delete), insert a blank page of the same size, and insert another PDF after the selection (merge).
+- Undo and redo in the toolbar and on the keyboard (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z). Tooltips say what will be undone ("Undo delete 3 pages").
+- Pure selection and reorder helpers with 10 tests.
+
+### Changed
+
+- The device pixel ratio hook is shared by the viewer and the sidebar.
+
 ## [1.0.5-pre-alpha]
 
 ### Added

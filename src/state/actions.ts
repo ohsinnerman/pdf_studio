@@ -1,7 +1,8 @@
-import type { DocumentInfo } from '../engine/api.ts';
+import type { Command, DocumentInfo } from '../engine/api.ts';
 import { getEngine } from '../engine/client.ts';
 import { platform, type OpenedFile } from '../platform/index.ts';
 import { renderer } from '../render/index.ts';
+import { keysToOrder, isIdentity, nextSelection, reorderForDrop } from '../features/thumbnails/reorder.ts';
 import { clampZoom, stepZoom, useApp, type Notice } from './store.ts';
 
 /**
@@ -103,7 +104,14 @@ export async function cancelPassword(): Promise<void> {
 
 function showDocument(info: DocumentInfo, name: string, path: string | null) {
   renderer.invalidateStructure();
-  set({ doc: { id: info.id, name, path, info }, currentPage: 0, fit: 'width', scrollTarget: null });
+  set({
+    doc: { id: info.id, name, path, info },
+    currentPage: 0,
+    fit: 'width',
+    scrollTarget: null,
+    selection: [],
+    selectionAnchor: null,
+  });
   if (info.wasRepaired)
     notify('info', `${name} was damaged and has been repaired. Saving will write a fixed copy.`);
 }
@@ -141,4 +149,139 @@ export function goToPage(index: number): void {
   if (count === 0) return;
   const clamped = Math.max(0, Math.min(count - 1, index));
   set({ scrollTarget: { index: clamped, nonce: ++scrollNonce }, currentPage: clamped });
+}
+
+// ---------- Selection ----------
+
+const pageKeys = () => get().doc?.info.pages.map((p) => p.key) ?? [];
+
+export function clickPage(key: number, mods: { toggle: boolean; range: boolean }): void {
+  const { selection, selectionAnchor } = get();
+  const next = nextSelection(pageKeys(), selection, selectionAnchor, key, mods);
+  set({ selection: next.selection, selectionAnchor: next.anchor });
+  const index = pageKeys().indexOf(key);
+  if (index >= 0 && !mods.toggle && !mods.range) goToPage(index);
+}
+
+export function selectAllPages(): void {
+  set({ selection: pageKeys(), selectionAnchor: pageKeys()[0] ?? null });
+}
+
+/** Indices the page actions apply to: the selection, or the current page if nothing is selected. */
+export function targetIndices(): number[] {
+  const { doc, selection, currentPage } = get();
+  if (!doc) return [];
+  const keys = pageKeys();
+  const selected = selection.map((k) => keys.indexOf(k)).filter((i) => i >= 0);
+  return selected.length > 0 ? selected.sort((a, b) => a - b) : [Math.min(currentPage, keys.length - 1)];
+}
+
+// ---------- Commands ----------
+
+const STRUCTURAL: ReadonlySet<Command['type']> = new Set([
+  'deletePages',
+  'reorderPages',
+  'insertBlankPage',
+  'insertDocument',
+]);
+
+function applyInfo(info: DocumentInfo, structural: boolean) {
+  const { doc, selection, currentPage } = get();
+  if (!doc || doc.id !== info.id) return;
+  // Page indices may have moved: any render already queued could hit the wrong page.
+  if (structural) renderer.invalidateStructure();
+  const keys = new Set(info.pages.map((p) => p.key));
+  set({
+    doc: { ...doc, info },
+    selection: selection.filter((k) => keys.has(k)),
+    currentPage: Math.min(currentPage, info.pages.length - 1),
+  });
+}
+
+export async function runCommand(command: Command): Promise<boolean> {
+  const { doc } = get();
+  if (!doc) return false;
+  try {
+    applyInfo(await getEngine().run(doc.id, command), STRUCTURAL.has(command.type));
+    return true;
+  } catch (err) {
+    notify('error', describeError(err));
+    return false;
+  }
+}
+
+export async function undo(): Promise<void> {
+  const { doc } = get();
+  if (!doc?.info.undoLabel) return;
+  try {
+    // Undo can move or restore pages, so treat it as structural.
+    applyInfo(await getEngine().undo(doc.id), true);
+  } catch (err) {
+    notify('error', describeError(err));
+  }
+}
+
+export async function redo(): Promise<void> {
+  const { doc } = get();
+  if (!doc?.info.redoLabel) return;
+  try {
+    applyInfo(await getEngine().redo(doc.id), true);
+  } catch (err) {
+    notify('error', describeError(err));
+  }
+}
+
+// ---------- Page actions ----------
+
+export const rotateTargets = (by: 90 | 270) =>
+  runCommand({ type: 'rotatePages', pages: targetIndices(), by });
+
+export async function deleteTargets(): Promise<void> {
+  const pages = targetIndices();
+  const total = get().doc?.info.pages.length ?? 0;
+  if (pages.length >= total) {
+    notify('error', 'A PDF needs at least one page. Select fewer pages to delete.');
+    return;
+  }
+  if (await runCommand({ type: 'deletePages', pages })) {
+    set({ selection: [], selectionAnchor: null });
+  }
+}
+
+/** Inserts a blank page after the last target page, the same size as that page. */
+export async function insertBlankPage(): Promise<void> {
+  const { doc } = get();
+  const last = targetIndices().at(-1);
+  if (!doc || last === undefined) return;
+  const ref = doc.info.pages[last]!;
+  // A rotated page reports its visible size; a new page starts unrotated with the same look.
+  const [width, height] = ref.rotation % 180 === 0 ? [ref.width, ref.height] : [ref.height, ref.width];
+  if (await runCommand({ type: 'insertBlankPage', at: last + 1, width, height })) goToPage(last + 1);
+}
+
+/** Asks for another PDF and inserts all its pages after the last target page. */
+export async function insertPdf(): Promise<void> {
+  const { doc } = get();
+  const last = targetIndices().at(-1);
+  if (!doc || last === undefined) return;
+  try {
+    const [file] = await platform.openPdfs();
+    if (!file) return;
+    set({ busy: `Inserting ${file.name}…` });
+    if (await runCommand({ type: 'insertDocument', at: last + 1, bytes: file.bytes, name: file.name })) {
+      goToPage(last + 1);
+    }
+  } catch (err) {
+    notify('error', describeError(err));
+  } finally {
+    set({ busy: null });
+  }
+}
+
+/** Handles a thumbnail drop. */
+export async function movePages(activeKey: number, overKey: number): Promise<void> {
+  const keys = pageKeys();
+  const newKeys = reorderForDrop(keys, new Set(get().selection), activeKey, overKey);
+  const order = keysToOrder(keys, newKeys);
+  if (!isIdentity(order)) await runCommand({ type: 'reorderPages', order });
 }

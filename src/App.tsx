@@ -9,7 +9,19 @@ import { DropTarget } from './features/open/DropTarget.tsx';
 import { PasswordDialog } from './features/open/PasswordDialog.tsx';
 import { StatusBar } from './features/status/StatusBar.tsx';
 import { Viewer } from './features/viewer/Viewer.tsx';
-import { fitWidth, openFromDialog, zoomIn, zoomOut } from './state/actions.ts';
+import { Sidebar } from './features/thumbnails/Sidebar.tsx';
+import { useDevicePixelRatio } from './lib/useDevicePixelRatio.ts';
+import {
+  deleteTargets,
+  fitWidth,
+  openFromDialog,
+  redo,
+  rotateTargets,
+  selectAllPages,
+  undo,
+  zoomIn,
+  zoomOut,
+} from './state/actions.ts';
 import { useShortcuts, type ShortcutMap } from './state/shortcuts.ts';
 import { MAX_ZOOM, MIN_ZOOM, useApp } from './state/store.ts';
 import styles from './App.module.css';
@@ -20,6 +32,7 @@ export function App() {
   const fit = useApp((s) => s.fit);
   const busy = useApp((s) => s.busy);
   const passwordPrompt = useApp((s) => s.passwordPrompt);
+  const dpr = useDevicePixelRatio();
 
   const shortcuts = useMemo<ShortcutMap>(
     () => ({
@@ -28,6 +41,13 @@ export function App() {
       'Ctrl+Shift+=': zoomIn,
       'Ctrl+-': zoomOut,
       'Ctrl+0': fitWidth,
+      'Ctrl+Z': () => void undo(),
+      'Ctrl+Y': () => void redo(),
+      'Ctrl+Shift+Z': () => void redo(),
+      'Ctrl+A': selectAllPages,
+      'Ctrl+[': () => void rotateTargets(270),
+      'Ctrl+]': () => void rotateTargets(90),
+      Delete: () => void deleteTargets(),
     }),
     [],
   );
@@ -53,8 +73,20 @@ export function App() {
         </ToolbarGroup>
         <ToolbarSpacer />
         <ToolbarGroup label="History">
-          <IconButton label="Undo" shortcut="Ctrl+Z" icon={<Undo2 />} disabled />
-          <IconButton label="Redo" shortcut="Ctrl+Y" icon={<Redo2 />} disabled />
+          <IconButton
+            label={doc?.info.undoLabel ? `Undo ${doc.info.undoLabel.toLowerCase()}` : 'Undo'}
+            shortcut="Ctrl+Z"
+            icon={<Undo2 />}
+            onClick={() => void undo()}
+            disabled={!doc?.info.undoLabel}
+          />
+          <IconButton
+            label={doc?.info.redoLabel ? `Redo ${doc.info.redoLabel.toLowerCase()}` : 'Redo'}
+            shortcut="Ctrl+Y"
+            icon={<Redo2 />}
+            onClick={() => void redo()}
+            disabled={!doc?.info.redoLabel}
+          />
         </ToolbarGroup>
         <ToolbarDivider />
         <ToolbarGroup label="Zoom">
@@ -87,10 +119,11 @@ export function App() {
         </Button>
       </Toolbar>
 
-      <div className={`${styles.body} ${styles.bodyNoSidebar}`}>
+      <div className={doc ? styles.body : `${styles.body} ${styles.bodyNoSidebar}`}>
+        {doc && <Sidebar key={doc.id} doc={doc} dpr={dpr} />}
         <main className={styles.viewport} aria-label="Document">
           {doc ? (
-            <Viewer key={doc.id} doc={doc} />
+            <Viewer key={doc.id} doc={doc} dpr={dpr} />
           ) : (
             <EmptyState onOpen={() => void openFromDialog()} busy={!!busy} />
           )}

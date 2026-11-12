@@ -1,6 +1,6 @@
 [package]
 name = "pdf-studio"
-version = "1.0.5-pre-alpha"
+version = "1.0.6-pre-alpha"
 description = "A free, offline desktop PDF editor for Windows."
 authors = ["Akul Shrivastava"]
 license = "AGPL-3.0-or-later"

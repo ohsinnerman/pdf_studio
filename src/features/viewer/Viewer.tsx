@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { CSS_PX_PER_POINT, pageSizeOnScreen } from '../../lib/coords.ts';
 import { setCurrentPage, setFittedZoom, zoomIn, zoomOut } from '../../state/actions.ts';
 import { useApp, type OpenDoc } from '../../state/store.ts';
@@ -9,25 +9,12 @@ import styles from './Viewer.module.css';
 const PADDING = 24; // px around the pages
 const GAP = 20; // px between pages (--page-gap)
 
-function useDevicePixelRatio(): number {
-  const [dpr, setDpr] = useState(() => window.devicePixelRatio || 1);
-  useEffect(() => {
-    // Fires when the window moves to a screen with a different scaling.
-    const query = matchMedia(`(resolution: ${dpr}dppx)`);
-    const onChange = () => setDpr(window.devicePixelRatio || 1);
-    query.addEventListener('change', onChange);
-    return () => query.removeEventListener('change', onChange);
-  }, [dpr]);
-  return dpr;
-}
-
 /** The scrolling page list. Only pages near the viewport exist in the DOM. */
-export function Viewer({ doc }: { readonly doc: OpenDoc }) {
+export function Viewer({ doc, dpr }: { readonly doc: OpenDoc; readonly dpr: number }) {
   const zoom = useApp((s) => s.zoom);
   const fit = useApp((s) => s.fit);
   const scrollTarget = useApp((s) => s.scrollTarget);
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const dpr = useDevicePixelRatio();
   const { pages } = doc.info;
 
   // TanStack Virtual re-renders on scroll by design, so React Compiler skipping memoisation here is fine.
