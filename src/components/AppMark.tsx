@@ -1,0 +1,23 @@
+/** The app icon (public/icon.svg), inline so it needs no request and scales crisply. */
+export function AppMark({ size = 20 }: { readonly size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="64 64 896 896" aria-hidden focusable="false">
+      <rect x="64" y="64" width="896" height="896" rx="200" fill="#26251e" />
+      <path
+        d="M332 232h264l160 160v400a40 40 0 0 1-40 40H332a40 40 0 0 1-40-40V272a40 40 0 0 1 40-40z"
+        fill="#f7f7f4"
+      />
+      <path d="M596 232v120a40 40 0 0 0 40 40h120z" fill="#cfcdc4" />
+      <rect x="368" y="452" width="288" height="28" rx="14" fill="#a09c92" />
+      <rect x="368" y="520" width="232" height="28" rx="14" fill="#a09c92" />
+      <rect x="368" y="588" width="264" height="28" rx="14" fill="#a09c92" />
+      <path
+        d="M368 700c64-44 112 28 176-12s96-40 128-8"
+        fill="none"
+        stroke="#f54e00"
+        strokeWidth="40"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

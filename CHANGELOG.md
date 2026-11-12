@@ -4,6 +4,16 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.4-pre-alpha]
+
+### Added
+
+- `DESIGN.md`, the design system. The light theme adapts Cursor's warm-paper DESIGN.md and the dark theme adapts Warp's warm charcoal, both from awesome-design-md. System, motion and copy rules come from taste-skill. One signal-orange accent, no violet, hairlines instead of shadows, desktop density.
+- `src/styles/tokens.css`, mirroring every token, with light, dark and follow-the-OS modes. All text pairs meet WCAG AA contrast; the accent and muted greys were darkened to get there.
+- Bundled Geist and Geist Mono variable fonts, so no font requests are made.
+- Base components: `Button` (primary, secondary, ghost), `IconButton` (accessible name and shortcut tooltip required), `Toolbar` groups, and the app mark. Hover lifts 1px and press sinks with a slight scale, only for a real mouse, and nothing moves under reduced motion.
+- App shell (toolbar, viewport, status bar) and the empty state.
+
 ## [1.0.3-pre-alpha]
 
 ### Added

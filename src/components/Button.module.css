@@ -1,0 +1,97 @@
+/* One button family for the whole app (DESIGN.md › Components › Button). */
+
+.button {
+  --fill: transparent;
+  --border: transparent;
+  --text: var(--ink);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  /* The hover/press tint is a layer on top, so every variant darkens the same way. */
+  background-image: linear-gradient(var(--tint, transparent), var(--tint, transparent));
+  color: var(--text);
+  font: var(--text-label);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--m-hover-out) var(--ease),
+    background-color var(--m-hover-out) var(--ease);
+}
+
+.button svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.75;
+  flex: none;
+}
+
+.primary {
+  --fill: var(--accent);
+  --text: var(--on-accent);
+}
+.primary:hover:not(:disabled) {
+  --fill: var(--accent-hover);
+}
+.primary:active:not(:disabled) {
+  --fill: var(--accent-press);
+}
+
+.secondary {
+  --fill: var(--surface);
+  --border: var(--hairline-strong);
+}
+
+.ghost {
+  --fill: transparent;
+}
+
+.secondary:hover:not(:disabled),
+.ghost:hover:not(:disabled) {
+  --tint: var(--hover-tint);
+}
+.secondary:active:not(:disabled),
+.ghost:active:not(:disabled) {
+  --tint: var(--press-tint);
+}
+
+/* Toggled on: accent-soft fill, accent icon. */
+.pressed {
+  --fill: var(--accent-soft);
+  --text: var(--accent);
+}
+
+.icon {
+  width: var(--control-height);
+  padding: 0;
+}
+.icon svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.button:disabled {
+  --text: var(--faint);
+  cursor: default;
+}
+.primary:disabled {
+  --fill: var(--surface-sunken);
+}
+
+/* Movement only for a real mouse, and never under reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    transition-duration: var(--m-hover-in);
+  }
+  .button:active:not(:disabled) {
+    transform: translateY(1px) scale(0.985);
+    transition-duration: var(--m-press);
+  }
+}

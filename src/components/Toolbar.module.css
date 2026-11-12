@@ -1,0 +1,26 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--toolbar-height);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  background: var(--canvas);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 var(--space-1);
+  background: var(--hairline-strong);
+}
+
+.spacer {
+  flex: 1;
+}
