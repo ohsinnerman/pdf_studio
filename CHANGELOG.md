@@ -4,6 +4,17 @@ All notable changes to PDF Studio. Every commit bumps the patch version while in
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.10-pre-alpha]
+
+### Added
+
+- Engine support for **editing existing text** (`src/engine/mupdf/text.ts`, ADR 0005):
+  - `getTextLines(page)` returns every line with its text, box, baseline, size, colour and font. The font family (sans, serif or mono) and bold/italic are read from the font's flags and its name. Lines come in visual order. Rotated or vertical lines are marked not editable.
+  - The `replaceText` command removes one line's glyphs with a text-only redaction (images and drawings untouched), then draws the new text on the same baseline, at the same size and colour, in the closest standard font. That font is embedded as a CID font, so the text stays selectable and searchable. An empty string deletes the line.
+  - It refuses characters the substitute font can't draw (e.g. "₹") and changes nothing.
+  - Works with undo/redo, save-by-replay and rotated pages.
+- 16 tests: tight line spacing with quotes and accents, colour and bold kept, deleting a line, refusals, undo/redo, save and reopen with curly quotes still copyable, ink actually drawn, rotated pages, and a real Chromium-printed PDF with embedded subset fonts (`tests/fixtures/chromium-letter.pdf`).
+
 ## [1.0.9-pre-alpha]
 
 ### Added

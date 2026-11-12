@@ -36,6 +36,32 @@ export interface DocumentInfo {
   readonly redoLabel: string | null;
 }
 
+export type FontFamily = 'sans' | 'serif' | 'mono';
+
+export interface FontStyle {
+  /** The PDF's font name without the subset prefix, e.g. "TimesNewRomanPS-BoldMT". */
+  readonly name: string;
+  readonly family: FontFamily;
+  readonly bold: boolean;
+  readonly italic: boolean;
+}
+
+/** One line of existing text on a page, in page space (points, top-left origin). */
+export interface TextLine {
+  readonly text: string;
+  /** [x0, y0, x1, y1] */
+  readonly bbox: readonly [number, number, number, number];
+  /** Baseline start of the first character. */
+  readonly origin: readonly [number, number];
+  /** Font size of the first character, in points. */
+  readonly size: number;
+  /** RGB, 0..1 */
+  readonly color: readonly [number, number, number];
+  readonly font: FontStyle;
+  /** False for rotated or vertical text, which can't be edited yet. */
+  readonly editable: boolean;
+}
+
 export type OpenResult =
   | { readonly status: 'ok'; readonly info: DocumentInfo }
   | { readonly status: 'needs-password'; readonly id: DocumentId };
@@ -57,6 +83,20 @@ export type Command =
       readonly at: number;
       readonly bytes: Uint8Array;
       readonly name: string;
+    }
+  /**
+   * Replaces one line of existing text (as returned by getTextLines): removes its
+   * glyphs (text only; images and drawings stay) and draws `text` on the same
+   * baseline, size and colour, in a substitute font of the same family. An empty
+   * `text` deletes the line. See src/engine/mupdf/text.ts.
+   */
+  | {
+      readonly type: 'replaceText';
+      readonly page: number;
+      readonly line: Pick<TextLine, 'bbox' | 'origin' | 'size' | 'color'> & {
+        readonly font: Pick<FontStyle, 'family' | 'bold' | 'italic'>;
+      };
+      readonly text: string;
     };
 
 export interface RenderResult {
@@ -105,6 +145,8 @@ export interface EngineApi {
   authenticate(id: DocumentId, password: string): Promise<DocumentInfo>;
   close(id: DocumentId): Promise<void>;
   getInfo(id: DocumentId): Promise<DocumentInfo>;
+  /** Lines of existing text on a page, for the Edit text tool. */
+  getTextLines(id: DocumentId, pageIndex: number): Promise<TextLine[]>;
   /** `scale` is device pixels per point (see `renderScale` in lib/coords.ts). */
   render(id: DocumentId, pageIndex: number, scale: number): Promise<RenderResult>;
   run(id: DocumentId, command: Command): Promise<DocumentInfo>;
@@ -133,5 +175,7 @@ export function commandLabel(command: Command): string {
       return 'Insert blank page';
     case 'insertDocument':
       return `Insert ${command.name}`;
+    case 'replaceText':
+      return command.text.trim() === '' ? 'Delete text' : 'Edit text';
   }
 }

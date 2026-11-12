@@ -25,6 +25,7 @@ const api: EngineApi = {
   authenticate: (id: DocumentId, password: string) => wrap(() => engine.authenticate(id, password)),
   close: (id: DocumentId) => wrap(() => engine.close(id)),
   getInfo: (id: DocumentId) => wrap(() => engine.getInfo(id)),
+  getTextLines: (id: DocumentId, pageIndex: number) => wrap(() => engine.getTextLines(id, pageIndex)),
   run: (id: DocumentId, command: Command) => wrap(() => engine.run(id, command)),
   undo: (id: DocumentId) => wrap(() => engine.undo(id)),
   redo: (id: DocumentId) => wrap(() => engine.redo(id)),

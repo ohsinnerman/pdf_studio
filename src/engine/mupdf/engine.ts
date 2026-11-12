@@ -11,7 +11,9 @@ import {
   type Rotation,
   type SaveOptions,
   type SaveResult,
+  type TextLine,
 } from '../api.ts';
+import { readTextLines, replaceText } from './text.ts';
 
 /**
  * MuPDF-backed engine. Synchronous and single-threaded on purpose: it runs
@@ -95,6 +97,17 @@ export class MupdfEngine {
 
   getInfo(id: DocumentId): DocumentInfo {
     return this.info(this.entry(id));
+  }
+
+  getTextLines(id: DocumentId, pageIndex: number): TextLine[] {
+    const entry = this.entry(id);
+    this.assertPageIndex(entry, pageIndex);
+    const page = entry.doc.loadPage(pageIndex);
+    try {
+      return readTextLines(page);
+    } finally {
+      page.destroy();
+    }
   }
 
   render(id: DocumentId, pageIndex: number, scale: number): RenderResult {
@@ -234,6 +247,17 @@ export class MupdfEngine {
         if (!isPermutation) throw new EngineError('invalid-command', 'Order must list every page once');
         return;
       }
+      case 'replaceText': {
+        this.assertPageIndex(entry, command.page);
+        const [x0, y0, x1, y1] = command.line.bbox;
+        if (!(x1 > x0 && y1 > y0)) throw new EngineError('invalid-command', 'Text area is empty');
+        if (!(command.line.size > 0 && command.line.size < 1000)) {
+          throw new EngineError('invalid-command', 'Bad font size');
+        }
+        if (/[\r\n]/.test(command.text))
+          throw new EngineError('invalid-command', 'A line cannot contain line breaks');
+        return;
+      }
       case 'insertBlankPage':
       case 'insertDocument':
         if (!Number.isInteger(command.at) || command.at < 0 || command.at > count) {
@@ -348,6 +372,11 @@ function applyCommand(doc: mupdf.PDFDocument, command: Command): number[] {
       const pageObj = doc.addPage([0, 0, command.width, command.height], 0, {}, '');
       doc.insertPage(command.at, pageObj);
       return [];
+    }
+
+    case 'replaceText': {
+      replaceText(doc, command.page, command);
+      return [doc.findPage(command.page).asIndirect()];
     }
 
     case 'insertDocument': {

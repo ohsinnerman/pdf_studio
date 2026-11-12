@@ -2183,7 +2183,7 @@ dependencies = [
 
 [[package]]
 name = "pdf-studio"
-version = "1.0.9-pre-alpha"
+version = "1.0.10-pre-alpha"
 dependencies = [
  "percent-encoding",
  "serde",
